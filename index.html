@@ -3,13 +3,16 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-  <title>BB 照顧排班日曆 v1.2</title>
+  <title>BB 照顧排班日曆 v1.3 (雲端同步版)</title>
   <!-- Tailwind CSS -->
   <script src="https://cdn.tailwindcss.com"></script>
   <!-- Font Awesome 6 Free -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
   <!-- Google Fonts: Noto Sans TC -->
   <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <!-- Firebase SDK (v9/v10 Compat 版本，最易於單一 HTML 檔案中整合) -->
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
   <script>
     tailwind.config = {
       theme: {
@@ -53,7 +56,36 @@
       position: relative;
       box-shadow: 0 20px 50px rgba(0, 0, 0, 0.35);
       overflow-x: hidden;
+      transition: max-width 0.25s ease;
     }
+    /* 全螢幕展開模式（支援桌面與不支援原生 Fullscreen API 的 iOS 裝置） */
+    .mobile-shell.expanded-fullscreen {
+      max-width: 100% !important;
+      width: 100vw !important;
+      min-height: 100dvh !important;
+      border-radius: 0 !important;
+    }
+    /* 頂部公告跑馬燈動畫 */
+    .announcement-marquee-wrap {
+      overflow: hidden;
+      white-space: nowrap;
+      position: relative;
+      flex: 1;
+    }
+    .announcement-marquee-text {
+      display: inline-block;
+      padding-left: 100%;
+      white-space: nowrap;
+      animation: announcementScroll 16s linear infinite;
+    }
+    .announcement-marquee-wrap:active .announcement-marquee-text {
+      animation-play-state: paused;
+    }
+    @keyframes announcementScroll {
+      0%   { transform: translateX(0%); }
+      100% { transform: translateX(-100%); }
+    }
+
     .calendar-grid {
       display: grid;
       grid-template-columns: repeat(7, minmax(0, 1fr));
@@ -101,6 +133,7 @@
       box-shadow: 0 1px 2px rgba(0,0,0,0.12);
       position: relative;
       flex-shrink: 0;
+      line-height: 1;
     }
     .chip-size-normal { width: 22px; height: 22px; font-size: 11px; }
     .chip-size-sm     { width: 17px; height: 17px; font-size: 9px; }
@@ -209,18 +242,18 @@
     }
 
     @keyframes slideLeftAnim {
-      0% { opacity: 0.4; transform: translateX(14px); }
+      0% { opacity: 0.35; transform: translateX(18px); }
       100% { opacity: 1; transform: translateX(0); }
     }
     @keyframes slideRightAnim {
-      0% { opacity: 0.4; transform: translateX(-14px); }
+      0% { opacity: 0.35; transform: translateX(-18px); }
       100% { opacity: 1; transform: translateX(0); }
     }
     .swipe-anim-left {
-      animation: slideLeftAnim 0.2s ease-out;
+      animation: slideLeftAnim 0.22s ease-out;
     }
     .swipe-anim-right {
-      animation: slideRightAnim 0.2s ease-out;
+      animation: slideRightAnim 0.22s ease-out;
     }
     /* PIN 錯誤震動動畫 */
     @keyframes pinShake {
@@ -285,33 +318,56 @@
     </div>
 
     <!-- 頂部導覽列 -->
-    <header class="sticky top-0 z-30 bg-white/95 backdrop-blur-md border-b border-pink-100 px-3.5 pt-3 pb-2.5">
+    <header class="sticky top-0 z-30 bg-white/95 backdrop-blur-md border-b border-pink-100 px-3.5 pt-2.5 pb-2">
       <div class="flex items-center justify-between">
-        <div class="flex items-center gap-2">
-          <div class="w-9 h-9 rounded-xl bg-gradient-to-br from-pink-400 to-rose-400 flex items-center justify-center text-white shadow-sm">
+        <div class="flex items-center gap-2 min-w-0">
+          <div class="w-9 h-9 rounded-xl bg-gradient-to-br from-pink-400 to-rose-400 flex items-center justify-center text-white shadow-sm shrink-0">
             <i class="fa-solid fa-baby text-base"></i>
           </div>
-          <div>
-            <div class="flex items-center gap-1.5">
-              <h1 class="text-sm font-extrabold text-slate-800 tracking-tight leading-tight">BB 照顧排班日曆</h1>
-              <span class="text-[9px] font-bold px-1.5 py-0.5 rounded bg-pink-100 text-pink-600">v1.2</span>
+          <div class="min-w-0">
+            <div class="flex items-center gap-1">
+              <h1 class="text-sm font-extrabold text-slate-800 tracking-tight leading-tight truncate">BB 照顧排班日曆</h1>
+              <span id="cloudSyncBadge" class="inline-flex items-center gap-1 text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-amber-50 text-amber-600 border border-amber-200 shrink-0">
+                <span id="cloudSyncDot" class="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse"></span>
+                <span id="cloudSyncText">連線中</span>
+              </span>
             </div>
-            <p class="text-[10px] text-slate-500 font-medium">長按圖示可編輯或刪除排班</p>
+            <p class="text-[10px] text-slate-500 font-medium truncate">長按圖示可編輯或刪除排班</p>
           </div>
         </div>
-        <div class="flex items-center gap-1.5">
-          <button id="lockAppBtn" type="button" title="鎖定畫面" class="w-7 h-7 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-600 flex items-center justify-center text-xs transition">
+
+        <!-- 頂部功能按鈕：全螢幕切換、鎖定畫面、照顧者設定 -->
+        <div class="flex items-center gap-1.5 shrink-0">
+          <button id="fullscreenBtn" type="button" title="切換全螢幕顯示" class="w-7 h-7 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-600 flex items-center justify-center text-xs transition active:scale-95">
+            <i id="fullscreenIcon" class="fa-solid fa-expand"></i>
+          </button>
+          <button id="lockAppBtn" type="button" title="鎖定畫面" class="w-7 h-7 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-600 flex items-center justify-center text-xs transition active:scale-95">
             <i class="fa-solid fa-lock"></i>
           </button>
-          <button id="openHelperModalBtn" type="button" class="flex items-center gap-1 px-2.5 py-1.5 rounded-full bg-pink-50 hover:bg-pink-100 text-pink-600 text-xs font-bold border border-pink-200 transition">
+          <button id="openHelperModalBtn" type="button" class="flex items-center gap-1 px-2.5 py-1.5 rounded-full bg-pink-50 hover:bg-pink-100 text-pink-600 text-xs font-bold border border-pink-200 transition active:scale-95">
             <i class="fa-solid fa-users-gear"></i>
             <span>照顧者設定</span>
           </button>
         </div>
       </div>
 
+      <!-- 頂部滾動公告欄 (可點擊手動輸入公告) -->
+      <div id="announcementBar" class="mt-2 bg-gradient-to-r from-amber-50 via-orange-50/80 to-amber-50 border border-amber-200/80 rounded-xl px-2.5 py-1 flex items-center gap-2 cursor-pointer hover:border-amber-300 transition">
+        <span class="flex items-center gap-1 text-[10px] font-extrabold text-amber-700 bg-amber-200/70 px-1.5 py-0.5 rounded-md shrink-0">
+          <i class="fa-solid fa-bullhorn text-[10px] text-amber-600"></i>
+          <span>公告</span>
+        </span>
+        <div class="announcement-marquee-wrap text-[11px] font-bold text-amber-900">
+          <span id="announcementTextDisplay" class="announcement-marquee-text"></span>
+        </div>
+        <button id="editAnnouncementBtn" type="button" class="text-[10px] font-bold text-amber-700 hover:text-amber-900 flex items-center gap-0.5 shrink-0 pl-1 border-l border-amber-200">
+          <i class="fa-solid fa-pen-to-square"></i>
+          <span>編輯</span>
+        </button>
+      </div>
+
       <!-- 照顧者快速篩選列 -->
-      <div id="helperLegendBar" class="flex items-center gap-1.5 overflow-x-auto no-scrollbar mt-2.5 pb-0.5"></div>
+      <div id="helperLegendBar" class="flex items-center gap-1.5 overflow-x-auto no-scrollbar mt-2 pb-0.5"></div>
     </header>
 
     <!-- 主內容區 -->
@@ -319,13 +375,13 @@
       <!-- 月份與起始日切換列 -->
       <div class="flex items-center justify-between bg-white rounded-2xl px-3 py-2 shadow-sm border border-slate-100">
         <div class="flex items-center gap-1">
-          <button id="prevMonthBtn" type="button" class="w-7 h-7 rounded-full hover:bg-slate-100 flex items-center justify-center text-slate-600">
+          <button id="prevMonthBtn" type="button" class="w-7 h-7 rounded-full hover:bg-slate-100 flex items-center justify-center text-slate-600 active:scale-95">
             <i class="fa-solid fa-chevron-left text-xs"></i>
           </button>
           <div class="text-center min-w-[98px]">
             <h2 id="currentMonthLabel" class="text-xs font-extrabold text-slate-800">2026年 10月</h2>
           </div>
-          <button id="nextMonthBtn" type="button" class="w-7 h-7 rounded-full hover:bg-slate-100 flex items-center justify-center text-slate-600">
+          <button id="nextMonthBtn" type="button" class="w-7 h-7 rounded-full hover:bg-slate-100 flex items-center justify-center text-slate-600 active:scale-95">
             <i class="fa-solid fa-chevron-right text-xs"></i>
           </button>
         </div>
@@ -341,7 +397,7 @@
         </div>
       </div>
 
-      <!-- 24小時覆蓋率圖例 -->
+      <!-- 24小時覆蓋率圖例與左右滑動提示 -->
       <div class="flex items-center justify-between px-1 text-[10px] text-slate-500">
         <div class="flex items-center gap-2.5">
           <span class="inline-flex items-center gap-1">
@@ -354,11 +410,13 @@
             <span class="w-2 h-2 rounded-full bg-slate-200"></span>未排班
           </span>
         </div>
-        <span class="text-slate-400 font-medium">點選日期查看時間軸</span>
+        <span class="text-slate-400 font-medium inline-flex items-center gap-1">
+          <i class="fa-solid fa-arrows-left-right text-[9px] text-pink-400"></i>左右滑動切換月份
+        </span>
       </div>
 
-      <!-- 日曆主體 -->
-      <div class="bg-white/80 rounded-2xl p-2 shadow-sm border border-slate-100">
+      <!-- 日曆主體 (支援左右滑動切換月份) -->
+      <div id="calendarSwipeContainer" class="bg-white/80 rounded-2xl p-2 shadow-sm border border-slate-100 touch-pan-y">
         <div id="weekdayHeader" class="grid grid-cols-7 gap-1 text-center text-[11px] font-bold text-slate-400 mb-1.5 px-0.5"></div>
         <div id="calendarGrid" class="calendar-grid"></div>
       </div>
@@ -434,7 +492,7 @@
     </button>
 
     <!-- 底部導覽列 -->
-    <nav class="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-[430px] bg-white/95 backdrop-blur-md border-t border-slate-100 px-6 py-2 flex justify-around items-center z-20 text-xs">
+    <nav id="bottomNavBar" class="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-[430px] bg-white/95 backdrop-blur-md border-t border-slate-100 px-6 py-2 flex justify-around items-center z-20 text-xs">
       <button id="navCalendarBtn" type="button" class="flex flex-col items-center gap-0.5 text-pink-600 font-bold">
         <i class="fa-solid fa-calendar-days text-sm"></i>
         <span class="text-[10px]">排班日曆</span>
@@ -443,11 +501,55 @@
         <i class="fa-solid fa-plus-circle text-sm"></i>
         <span class="text-[10px]">新增排班</span>
       </button>
+      <button id="navAnnouncementBtn" type="button" class="flex flex-col items-center gap-0.5 text-slate-400 hover:text-slate-700 font-medium">
+        <i class="fa-solid fa-bullhorn text-sm"></i>
+        <span class="text-[10px]">家庭公告</span>
+      </button>
       <button id="navHelpersBtn" type="button" class="flex flex-col items-center gap-0.5 text-slate-400 hover:text-slate-700 font-medium">
         <i class="fa-solid fa-face-smile text-sm"></i>
         <span class="text-[10px]">照顧者設定</span>
       </button>
     </nav>
+
+    <!-- 彈窗 0：手動編輯頂部滾動公告 Modal -->
+    <div id="announcementModal" class="fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-xs hidden items-center justify-center p-5">
+      <div class="bg-white w-full max-w-[360px] rounded-3xl p-5 shadow-2xl space-y-3.5">
+        <div class="flex items-center justify-between border-b border-slate-100 pb-2.5">
+          <div class="flex items-center gap-2">
+            <span class="w-8 h-8 rounded-xl bg-amber-100 text-amber-600 flex items-center justify-center text-sm">
+              <i class="fa-solid fa-bullhorn"></i>
+            </span>
+            <div>
+              <h3 class="text-sm font-extrabold text-slate-800">編輯頂部滾動公告</h3>
+              <p class="text-[10px] text-slate-400">儲存後將透過雲端即時同步至所有家人手機</p>
+            </div>
+          </div>
+          <button id="closeAnnouncementModalBtn" type="button" class="w-7 h-7 rounded-full bg-slate-100 text-slate-500 flex items-center justify-center">
+            <i class="fa-solid fa-xmark text-xs"></i>
+          </button>
+        </div>
+
+        <div>
+          <label class="block text-[11px] font-bold text-slate-600 mb-1">公告內容 (支援輸入 Emoji)</label>
+          <textarea id="announcementInput" rows="3" placeholder="請輸入重要提醒事項..." class="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs font-bold text-slate-800 focus:outline-none focus:border-amber-400 focus:bg-white"></textarea>
+        </div>
+
+        <div>
+          <span class="block text-[10px] font-bold text-slate-400 mb-1.5">快速填入常用公告範本：</span>
+          <div class="flex flex-wrap gap-1.5">
+            <button type="button" data-template="🍼 BB 每日飲奶時間：07:00、11:00、15:00、19:00、23:00，請準時餵哺！" class="announcement-tpl-btn text-[10px] font-semibold bg-slate-100 hover:bg-amber-50 hover:text-amber-700 text-slate-600 px-2 py-1 rounded-lg transition">🍼 飲奶時間提醒</button>
+            <button type="button" data-template="💉 BB 今日打咗針，請各位密切留意體溫同精神狀態！" class="announcement-tpl-btn text-[10px] font-semibold bg-slate-100 hover:bg-amber-50 hover:text-amber-700 text-slate-600 px-2 py-1 rounded-lg transition">💉 打針後留意體溫</button>
+            <button type="button" data-template="📦 尿片同濕紙巾已經補貨放喺儲物櫃底層，用完請提早講聲～" class="announcement-tpl-btn text-[10px] font-semibold bg-slate-100 hover:bg-amber-50 hover:text-amber-700 text-slate-600 px-2 py-1 rounded-lg transition">📦 物資補貨通知</button>
+          </div>
+        </div>
+
+        <div class="flex items-center gap-2 pt-1">
+          <button id="saveAnnouncementBtn" type="button" class="flex-1 py-2.5 rounded-xl bg-gradient-to-r from-amber-500 to-orange-500 text-white font-bold text-xs shadow-sm active:scale-98 transition">
+            儲存並同步公告
+          </button>
+        </div>
+      </div>
+    </div>
 
     <!-- 彈窗 1：新增 / 編輯排班 Modal -->
     <div id="shiftFormModal" class="fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-xs hidden items-end justify-center">
@@ -532,7 +634,7 @@
           </div>
 
           <button type="submit" class="w-full py-3 rounded-xl bg-gradient-to-r from-pink-500 to-rose-500 text-white font-bold text-sm shadow-md shadow-pink-500/20 active:scale-99 transition">
-            儲存排班
+            儲存並同步排班
           </button>
         </form>
       </div>
@@ -561,13 +663,13 @@
       </div>
     </div>
 
-    <!-- 彈窗 3：照顧者管理及喜愛圖示設定 (人物 + 動物圖示) -->
+    <!-- 彈窗 3：照顧者管理及喜愛圖示設定 (支援 Emoji + 人物 + 動物圖示) -->
     <div id="helperManagerModal" class="fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-xs hidden items-end justify-center">
       <div class="bg-white w-full max-w-[430px] rounded-t-3xl p-5 max-h-[88dvh] overflow-y-auto shadow-2xl">
         <div class="flex items-center justify-between pb-3 border-b border-slate-100">
           <div>
             <h3 class="text-base font-extrabold text-slate-800">照顧者及專屬圖示設定</h3>
-            <p class="text-[11px] text-slate-400">可揀選人物或動物圖示，或新增/刪除照顧者</p>
+            <p class="text-[11px] text-slate-400">可揀選 Emoji、人物或動物圖示，或新增/刪除照顧者</p>
           </div>
           <button id="closeHelperModalBtn" type="button" class="w-8 h-8 rounded-full bg-slate-100 text-slate-500 flex items-center justify-center">
             <i class="fa-solid fa-xmark"></i>
@@ -593,15 +695,28 @@
             <input id="helperNameInput" type="text" placeholder="請輸入稱呼" class="w-full rounded-xl border border-slate-200 bg-white px-3 py-1.5 text-xs font-bold text-slate-800" />
           </div>
           <div>
-            <label class="block text-[11px] font-bold text-slate-600 mb-1">代表顏色</label>
+            <label class="block text-[11px] font-bold text-slate-600 mb-1">代表底色</label>
             <div id="helperColorPicker" class="flex items-center gap-2 flex-wrap"></div>
           </div>
+
+          <!-- 自訂輸入任意 Emoji 欄位 -->
+          <div class="bg-white p-2.5 rounded-xl border border-pink-200/80 flex items-center justify-between gap-2">
+            <div class="min-w-0">
+              <label class="block text-[11px] font-bold text-pink-600">自訂輸入喜愛 Emoji 圖示</label>
+              <p class="text-[10px] text-slate-400">可用手機鍵盤直接輸入任何 Emoji（如 🧸、🍼、🦸‍♀️）</p>
+            </div>
+            <div class="flex items-center gap-1.5 shrink-0">
+              <input id="customEmojiInput" type="text" maxlength="4" placeholder="😊" class="w-12 h-9 text-center text-base rounded-xl border border-slate-200 bg-slate-50 focus:bg-white focus:border-pink-400 focus:outline-none" />
+              <div id="currentIconPreviewBadge" class="w-9 h-9 rounded-xl flex items-center justify-center text-white text-sm shadow-xs"></div>
+            </div>
+          </div>
+
           <div>
-            <label class="block text-[11px] font-bold text-slate-600 mb-1">選擇喜愛圖示 (人物角色 / 可愛動物)</label>
-            <div id="helperIconPicker" class="space-y-2.5 max-h-52 overflow-y-auto pr-1"></div>
+            <label class="block text-[11px] font-bold text-slate-600 mb-1">或從圖示庫點選 (Emoji / 人物角色 / 可愛動物)</label>
+            <div id="helperIconPicker" class="space-y-2.5 max-h-56 overflow-y-auto pr-1"></div>
           </div>
           <button id="saveHelperBtn" type="button" class="w-full py-2 rounded-xl bg-pink-500 text-white font-bold text-xs shadow-sm">
-            儲存照顧者資料
+            儲存並同步照顧者資料
           </button>
         </div>
 
@@ -719,11 +834,40 @@
     }
 
     /**************************************************************
-     * 1. 圖示庫與預設資料 (7位預設照顧者依序：媽媽，爸爸，嫲嫲，爺爺，婆婆，公公，工人)
+     * 1. 圖示庫 (支援 Emoji + 人物角色 + 可愛動物) 與預設資料
      **************************************************************/
     const ICON_CATEGORIES = [
       {
-        category: '人物與家庭角色',
+        category: '精選 Emoji 表情與動物',
+        icons: [
+          { icon: '🤱', label: '媽媽餵哺' },
+          { icon: '👩', label: '媽媽' },
+          { icon: '👨', label: '爸爸' },
+          { icon: '👵', label: '嫲嫲/婆婆' },
+          { icon: '👴', label: '爺爺/公公' },
+          { icon: '👩‍🍼', label: '餵奶姐姐' },
+          { icon: '🧑‍🍼', label: '貼心照顧' },
+          { icon: '👶', label: '可愛BB' },
+          { icon: '🧚‍♀️', label: '神仙教母' },
+          { icon: '🦸‍♂️', label: '超人爸爸' },
+          { icon: '🐱', label: '貓咪' },
+          { icon: '🐶', label: '狗狗' },
+          { icon: '🐼', label: '熊貓' },
+          { icon: '🐰', label: '小兔' },
+          { icon: '🦊', label: '狐狸' },
+          { icon: '🐻', label: '小熊' },
+          { icon: '🐨', label: '無尾熊' },
+          { icon: '🐯', label: '小虎' },
+          { icon: '🦁', label: '獅子' },
+          { icon: '🐧', label: '企鵝' },
+          { icon: '🐣', label: '小雞' },
+          { icon: '🦄', label: '獨角獸' },
+          { icon: '🧸', label: '泰迪熊' },
+          { icon: '🍼', label: '奶樽' }
+        ]
+      },
+      {
+        category: '人物與家庭角色 (Font Awesome)',
         icons: [
           { icon: 'fa-person-breastfeeding', label: '餵哺/媽媽' },
           { icon: 'fa-person-dress', label: '女性/媽媽' },
@@ -740,11 +884,11 @@
           { icon: 'fa-user-ninja', label: '超人幫手' },
           { icon: 'fa-user-graduate', label: '博士' },
           { icon: 'fa-face-smile-beam', label: '笑臉' },
-          { icon: 'fa-face-Grin-hearts', label: '愛心臉' }
+          { icon: 'fa-face-grin-hearts', label: '愛心臉' }
         ]
       },
       {
-        category: '可愛動物圖示',
+        category: '可愛動物圖示 (Font Awesome)',
         icons: [
           { icon: 'fa-cat', label: '小貓咪' },
           { icon: 'fa-dog', label: '小狗狗' },
@@ -761,7 +905,7 @@
           { icon: 'fa-frog', label: '小青蛙' },
           { icon: 'fa-dragon', label: '小飛龍' },
           { icon: 'fa-feather-pointed', label: '羽毛' },
-          { icon: 'fa-Worm', label: '毛毛蟲' }
+          { icon: 'fa-worm', label: '毛毛蟲' }
         ]
       }
     ];
@@ -788,9 +932,11 @@
       night:     { label: '夜更', defaultStart: '18:00', defaultEnd: '05:59', badgeBg: '#E0E7FF', badgeText: '#4338CA' }
     };
 
-    const STORAGE_KEY_HELPERS   = 'bb_care_helpers_v5_safe';
-    const STORAGE_KEY_ENTRIES   = 'bb_care_entries_v5_safe';
-    const STORAGE_KEY_WEEKSTART = 'bb_care_weekstart_v5_safe';
+    const STORAGE_KEY_HELPERS      = 'bb_care_helpers_v5_safe';
+    const STORAGE_KEY_ENTRIES      = 'bb_care_entries_v5_safe';
+    const STORAGE_KEY_WEEKSTART    = 'bb_care_weekstart_v5_safe';
+    const STORAGE_KEY_ANNOUNCEMENT = 'bb_care_announcement_v1';
+    const DEFAULT_ANNOUNCEMENT     = '🍼 歡迎使用 BB 照顧排班日曆！請各位家人及姐姐確認每日交接時間，辛苦晒大家！💕';
 
     const now = new Date();
     let currentYear = now.getFullYear();
@@ -801,15 +947,134 @@
 
     let helpers = loadHelpers();
     let entries = loadEntries();
+    let announcementText = loadAnnouncement();
 
     let selectedShiftPreset = 'morning';
     let activeActionEntryId = null;
     let tempHelperColor = HELPER_COLORS[0];
-    let tempHelperIcon = 'fa-cat';
+    let tempHelperIcon = '🐱';
 
     /**************************************************************
-     * 2. 工具與日期驗證函數 (防崩潰保護)
+     * 1.5 Firebase 雲端即時同步設定 (bb-care-calendar)
      **************************************************************/
+    const firebaseConfig = {
+      apiKey: "AIzaSyDKGV_ub5ZyH7Dz-5wJlo9uDYjjtOc7Adc",
+      authDomain: "bb-care-calendar.firebaseapp.com",
+      projectId: "bb-care-calendar",
+      storageBucket: "bb-care-calendar.firebasestorage.app",
+      messagingSenderId: "253996185863",
+      appId: "1:253996185863:web:7374094f36cc58aadeeda2"
+    };
+
+    let db = null;
+    let calendarDocRef = null;
+
+    function updateCloudBadgeUI(status) {
+      const badge = document.getElementById('cloudSyncBadge');
+      const dot = document.getElementById('cloudSyncDot');
+      const text = document.getElementById('cloudSyncText');
+      if (!badge || !dot || !text) return;
+
+      if (status === 'synced') {
+        badge.className = 'inline-flex items-center gap-1 text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-emerald-50 text-emerald-600 border border-emerald-200 shrink-0';
+        dot.className = 'w-1.5 h-1.5 rounded-full bg-emerald-500';
+        text.textContent = '雲端同步';
+      } else if (status === 'syncing') {
+        badge.className = 'inline-flex items-center gap-1 text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-amber-50 text-amber-600 border border-amber-200 shrink-0';
+        dot.className = 'w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse';
+        text.textContent = '同步中...';
+      } else {
+        badge.className = 'inline-flex items-center gap-1 text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-slate-100 text-slate-500 border border-slate-200 shrink-0';
+        dot.className = 'w-1.5 h-1.5 rounded-full bg-slate-400';
+        text.textContent = '離線快取';
+      }
+    }
+
+    function initFirebaseCloudSync() {
+      try {
+        if (typeof firebase === 'undefined') {
+          updateCloudBadgeUI('offline');
+          return;
+        }
+        if (!firebase.apps.length) {
+          firebase.initializeApp(firebaseConfig);
+        }
+        db = firebase.firestore();
+        calendarDocRef = db.collection('family_care').doc('shared_calendar');
+
+        calendarDocRef.onSnapshot((doc) => {
+          if (doc.exists) {
+            const data = doc.data();
+            if (data) {
+              if (Array.isArray(data.helpers) && data.helpers.length > 0) {
+                helpers = data.helpers;
+                try { localStorage.setItem(STORAGE_KEY_HELPERS, JSON.stringify(helpers)); } catch (e) {}
+              }
+              if (Array.isArray(data.entries)) {
+                entries = data.entries.filter(e =>
+                  e && e.id && e.helperId &&
+                  isValidDateStr(e.startDate) &&
+                  isValidDateStr(e.endDate) &&
+                  e.startDate <= e.endDate &&
+                  typeof e.start === 'string' &&
+                  typeof e.end === 'string'
+                );
+                try { localStorage.setItem(STORAGE_KEY_ENTRIES, JSON.stringify(entries)); } catch (e) {}
+              }
+              if (typeof data.announcementText === 'string' && data.announcementText.trim()) {
+                announcementText = data.announcementText.trim();
+                try { localStorage.setItem(STORAGE_KEY_ANNOUNCEMENT, announcementText); } catch (e) {}
+              }
+              refreshAllViews();
+              // 若照顧者管理視窗正開啟，同步更新列表
+              const helperModal = document.getElementById('helperManagerModal');
+              if (helperModal && !helperModal.classList.contains('hidden')) {
+                renderHelperManagerList();
+              }
+            }
+            updateCloudBadgeUI('synced');
+          } else {
+            // 雲端尚無初始資料時，將目前預設資料寫入雲端
+            syncToCloud();
+          }
+        }, (error) => {
+          console.error('Firebase 雲端監聽失敗 (請確認 Firestore Rules 是否已開啟讀寫權限):', error);
+          updateCloudBadgeUI('offline');
+        });
+      } catch (err) {
+        console.error('Firebase 初始化失敗:', err);
+        updateCloudBadgeUI('offline');
+      }
+    }
+
+    function syncToCloud() {
+      if (!calendarDocRef) return;
+      updateCloudBadgeUI('syncing');
+      calendarDocRef.set({
+        helpers: helpers,
+        entries: entries,
+        announcementText: announcementText,
+        lastUpdated: firebase.firestore.FieldValue.serverTimestamp()
+      }, { merge: true }).then(() => {
+        updateCloudBadgeUI('synced');
+      }).catch((err) => {
+        console.error('上傳雲端失敗:', err);
+        updateCloudBadgeUI('offline');
+      });
+    }
+
+    /**************************************************************
+     * 2. 工具、圖示渲染 (支援 Font Awesome 及 Emoji) 與日期驗證函數
+     **************************************************************/
+    function renderHelperIconHtml(iconStr, extraClass = '') {
+      if (!iconStr) return `<i class="fa-solid fa-user ${extraClass}"></i>`;
+      const trimmed = String(iconStr).trim();
+      if (trimmed.startsWith('fa-')) {
+        return `<i class="fa-solid ${trimmed} ${extraClass}"></i>`;
+      }
+      return `<span class="inline-flex items-center justify-center leading-none select-none ${extraClass}" style="font-style:normal;">${trimmed}</span>`;
+    }
+
     function pad2(n) {
       return String(n).padStart(2, '0');
     }
@@ -846,6 +1111,31 @@
       return `${d}/${m}`;
     }
 
+    function loadAnnouncement() {
+      try {
+        const saved = localStorage.getItem(STORAGE_KEY_ANNOUNCEMENT);
+        return saved && saved.trim() ? saved.trim() : DEFAULT_ANNOUNCEMENT;
+      } catch (e) {
+        return DEFAULT_ANNOUNCEMENT;
+      }
+    }
+
+    function saveAnnouncement(text) {
+      announcementText = (text && text.trim()) ? text.trim() : DEFAULT_ANNOUNCEMENT;
+      try {
+        localStorage.setItem(STORAGE_KEY_ANNOUNCEMENT, announcementText);
+      } catch (e) {}
+      renderAnnouncementBar();
+      syncToCloud();
+    }
+
+    function renderAnnouncementBar() {
+      const displayEl = document.getElementById('announcementTextDisplay');
+      if (displayEl) {
+        displayEl.textContent = announcementText;
+      }
+    }
+
     function loadWeekStartPref() {
       try {
         const saved = localStorage.getItem(STORAGE_KEY_WEEKSTART);
@@ -872,6 +1162,7 @@
       try {
         localStorage.setItem(STORAGE_KEY_HELPERS, JSON.stringify(helpers));
       } catch (e) {}
+      syncToCloud();
     }
 
     function loadEntries() {
@@ -899,12 +1190,10 @@
       const day3Key = addDaysToDateStr(todayKey, 2);
 
       const seeded = [
-        // 今日：24小時全滿示範 (與截圖一致的 4 段排班)
         { id: 'e1', startDate: todayKey, endDate: todayKey, helperId: 'h7', shift: 'night',     start: '00:00', end: '06:00' },
         { id: 'e2', startDate: todayKey, endDate: todayKey, helperId: 'h1', shift: 'morning',   start: '06:00', end: '14:00' },
         { id: 'e3', startDate: todayKey, endDate: todayKey, helperId: 'h3', shift: 'afternoon', start: '12:00', end: '18:00' },
         { id: 'e4', startDate: todayKey, endDate: todayKey, helperId: 'h2', shift: 'night',     start: '18:00', end: '23:59' },
-        // 明日至後日：婆婆跨夜照顧示範
         { id: 'e5', startDate: tmrKey,   endDate: tmrKey,   helperId: 'h5', shift: 'afternoon', start: '12:00', end: '19:00' },
         { id: 'e6', startDate: tmrKey,   endDate: day3Key,  helperId: 'h7', shift: 'night',     start: '19:00', end: '11:00' }
       ];
@@ -918,6 +1207,7 @@
       try {
         localStorage.setItem(STORAGE_KEY_ENTRIES, JSON.stringify(entries));
       } catch (e) {}
+      syncToCloud();
     }
 
     function getHelperById(id) {
@@ -940,16 +1230,11 @@
       return Math.round((dt2 - dt1) / (1000 * 60 * 60 * 24));
     }
 
-    /**
-     * 取得某筆排班在指定日期 (targetDateStr) 佔用的當日分鐘區間 [startMin, endMin]
-     */
     function getSegmentsForDate(entry, targetDateStr) {
       if (!entry || !isValidDateStr(entry.startDate) || !isValidDateStr(entry.endDate)) return [];
       const sDate = entry.startDate;
       const eDate = entry.endDate;
       if (targetDateStr < sDate || targetDateStr > eDate) return [];
-
-      // 防止異常超長跨日
       if (getDaysDiff(sDate, eDate) > 60) return [];
 
       const sMin = timeToMinutes(entry.start);
@@ -985,9 +1270,6 @@
         });
     }
 
-    /**
-     * 嚴格計算某日 1440 分鐘的覆蓋狀態
-     */
     function evaluateDayCoverage(dateStr, rawEntriesForDate) {
       const covered = new Uint8Array(1440);
       rawEntriesForDate.forEach(entry => {
@@ -1013,7 +1295,7 @@
       };
     }
 
-    function formatEntryRangeBadge(entry, currentDayStr) {
+    function formatEntryRangeBadge(entry) {
       const isMultiDay = entry.startDate !== entry.endDate;
       if (!isMultiDay) {
         return `${entry.start} – ${entry.end}`;
@@ -1043,7 +1325,7 @@
             isActive ? 'ring-2 ring-pink-400 bg-pink-50 border-pink-300 text-slate-800' : 'bg-white border-slate-200 text-slate-700'
           }">
             <span class="w-5 h-5 rounded-full flex items-center justify-center text-white text-[10px]" style="background:${h.color}">
-              <i class="fa-solid ${h.icon}"></i>
+              ${renderHelperIconHtml(h.icon)}
             </span>
             <span>${h.name}</span>
           </button>
@@ -1089,11 +1371,17 @@
       return 'chip-size-xxs';
     }
 
-    function renderCalendar() {
+    function renderCalendar(monthSwipeDirection = null) {
       renderWeekdayHeader();
       const grid = document.getElementById('calendarGrid');
       const monthLabel = document.getElementById('currentMonthLabel');
       monthLabel.textContent = `${currentYear}年 ${currentMonth + 1}月`;
+
+      if (monthSwipeDirection === 'left' || monthSwipeDirection === 'right') {
+        grid.classList.remove('swipe-anim-left', 'swipe-anim-right');
+        void grid.offsetWidth;
+        grid.classList.add(monthSwipeDirection === 'left' ? 'swipe-anim-left' : 'swipe-anim-right');
+      }
 
       const firstDayOfMonth = new Date(currentYear, currentMonth, 1).getDay();
       const leadingEmptyCount = weekStartsOnMonday
@@ -1151,10 +1439,10 @@
             <span
               class="helper-chip ${chipSizeClass}"
               data-entry-id="${entry.id}"
-              title="${h.name} (${formatEntryRangeBadge(entry, cell.dateStr)})"
+              title="${h.name} (${formatEntryRangeBadge(entry)})"
               style="background:${h.color};"
             >
-              <i class="fa-solid ${h.icon}"></i>
+              ${renderHelperIconHtml(h.icon)}
             </span>
           `;
         }).join('');
@@ -1178,10 +1466,6 @@
       }).join('');
     }
 
-    /**
-     * 渲染每日照顧者橫向時間軸 (Gantt Chart)
-     * - 強制單行文字、自動縮小字體 (Shrinkable Text) + 超出寬度時自動啟用跑馬燈滾動 (Rolling Text)
-     */
     function renderGanttChart(swipeDirection = null) {
       const ganttBody = document.getElementById('ganttBody');
       const ganttDateTitle = document.getElementById('ganttDateTitle');
@@ -1244,7 +1528,6 @@
             const em = pad2(eMin % 60);
             const label = `${sh}:${sm}-${eh}:${em}`;
 
-            // 根據時間長條寬度比例自動選擇字體大小階層
             let textSizeClass = 'gantt-text-normal';
             if (widthPct < 20) {
               textSizeClass = 'gantt-text-tiny';
@@ -1270,7 +1553,7 @@
             <!-- 左側 Y 軸照顧者標籤 -->
             <div class="gantt-label-col flex items-center gap-1.5 overflow-hidden">
               <span class="w-5 h-5 rounded-full flex items-center justify-center text-white text-[10px] shrink-0 shadow-2xs" style="background:${h.color}">
-                <i class="fa-solid ${h.icon}"></i>
+                ${renderHelperIconHtml(h.icon)}
               </span>
               <span class="text-[11px] font-bold text-slate-700 truncate">${h.name}</span>
             </div>
@@ -1278,17 +1561,13 @@
             <!-- 右側 X 軸 00:00 - 23:59 時間軌道 -->
             <div class="gantt-track-col">
               <div class="gantt-track-bar">
-                <!-- 00:00-05:59 深藍色 50% 透明度夜間區塊 -->
                 <div class="gantt-night-zone" style="left: 0%; width: 25%;"></div>
-                <!-- 18:00-23:59 深藍色 50% 透明度夜間區塊 -->
                 <div class="gantt-night-zone" style="left: 75%; width: 25%;"></div>
 
-                <!-- 06:00, 12:00, 18:00 對齊格線 -->
                 <div class="gantt-grid-line" style="left: 25%;"></div>
                 <div class="gantt-grid-line" style="left: 50%;"></div>
                 <div class="gantt-grid-line" style="left: 75%;"></div>
 
-                <!-- 照顧者排班時間條 -->
                 ${barsHtml}
               </div>
             </div>
@@ -1296,7 +1575,6 @@
         `;
       }).join('');
 
-      // 渲染完成後自動檢查每個時間條：若文字寬度仍大於時間條可用寬度，自動啟用平滑跑馬燈滾動顯示
       requestAnimationFrame(() => {
         const bars = ganttBody.querySelectorAll('.gantt-bar');
         bars.forEach(bar => {
@@ -1336,7 +1614,7 @@
       listEl.innerHTML = dayEntries.map(entry => {
         const h = getHelperById(entry.helperId);
         const shiftInfo = SHIFT_META[entry.shift] || SHIFT_META.morning;
-        const rangeText = formatEntryRangeBadge(entry, selectedDateStr);
+        const rangeText = formatEntryRangeBadge(entry);
         return `
           <div class="flex items-center justify-between p-2.5 rounded-xl bg-slate-50/90 border border-slate-100">
             <div class="flex items-center gap-2.5">
@@ -1346,7 +1624,7 @@
                 style="background:${h.color}"
                 title="長按可編輯或刪除"
               >
-                <i class="fa-solid ${h.icon}"></i>
+                ${renderHelperIconHtml(h.icon)}
               </div>
               <div>
                 <div class="flex items-center gap-1.5 flex-wrap">
@@ -1369,6 +1647,7 @@
     }
 
     function refreshAllViews(swipeDirection = null) {
+      renderAnnouncementBar();
       renderHelperLegend();
       renderCalendar();
       renderGanttChart(swipeDirection);
@@ -1376,7 +1655,7 @@
     }
 
     /**************************************************************
-     * 4. 新增 / 編輯排班表單 Modal (含「全日」00:00-23:59 按鈕)
+     * 4. 新增 / 編輯排班表單 Modal
      **************************************************************/
     function renderHelperRadioGrid(selectedHelperId) {
       const container = document.getElementById('helperRadioGrid');
@@ -1386,7 +1665,7 @@
           <input type="radio" name="helperId" value="${h.id}" class="peer sr-only" ${h.id === chosen ? 'checked' : ''} />
           <div class="p-2 rounded-xl border border-slate-200 bg-slate-50/60 peer-checked:border-pink-500 peer-checked:bg-pink-50/70 peer-checked:ring-2 peer-checked:ring-pink-200 flex flex-col items-center gap-1 transition">
             <span class="w-8 h-8 rounded-full flex items-center justify-center text-white text-xs shadow-xs" style="background:${h.color}">
-              <i class="fa-solid ${h.icon}"></i>
+              ${renderHelperIconHtml(h.icon)}
             </span>
             <span class="text-[11px] font-bold text-slate-700 truncate w-full text-center">${h.name}</span>
           </div>
@@ -1484,7 +1763,7 @@
 
       const badge = document.getElementById('actionMenuHelperBadge');
       badge.style.background = h.color;
-      badge.innerHTML = `<i class="fa-solid ${h.icon}"></i>`;
+      badge.innerHTML = renderHelperIconHtml(h.icon);
 
       document.getElementById('actionMenuTitle').textContent = `${h.name} · ${shiftInfo.label}`;
       document.getElementById('actionMenuSubtitle').textContent =
@@ -1503,8 +1782,15 @@
     }
 
     /**************************************************************
-     * 6. 照顧者設定 Modal (新增 / 編輯 / 刪除 + 人物與動物圖示選擇)
+     * 6. 照顧者設定 Modal (支援 Emoji + 人物 + 動物圖示)
      **************************************************************/
+    function updateHelperIconPreviewBadge() {
+      const preview = document.getElementById('currentIconPreviewBadge');
+      if (!preview) return;
+      preview.style.background = tempHelperColor;
+      preview.innerHTML = renderHelperIconHtml(tempHelperIcon);
+    }
+
     function renderHelperEditorPickers() {
       const colorContainer = document.getElementById('helperColorPicker');
       colorContainer.innerHTML = HELPER_COLORS.map(c => `
@@ -1524,13 +1810,19 @@
                   ? 'border-pink-500 bg-pink-50 text-pink-600 ring-2 ring-pink-200'
                   : 'border-slate-200 bg-white text-slate-600'
               }">
-                <i class="fa-solid ${item.icon} text-sm"></i>
-                <span class="text-[9px] font-medium truncate w-full text-center">${item.label}</span>
+                <span class="text-sm leading-none">${renderHelperIconHtml(item.icon)}</span>
+                <span class="text-[9px] font-medium truncate w-full text-center mt-0.5">${item.label}</span>
               </button>
             `).join('')}
           </div>
         </div>
       `).join('');
+
+      const customEmojiInput = document.getElementById('customEmojiInput');
+      if (customEmojiInput) {
+        customEmojiInput.value = tempHelperIcon.startsWith('fa-') ? '' : tempHelperIcon;
+      }
+      updateHelperIconPreviewBadge();
     }
 
     function openHelperEditor(helperObj = null) {
@@ -1550,7 +1842,7 @@
         idInput.value = '';
         nameInput.value = '';
         tempHelperColor = HELPER_COLORS[helpers.length % HELPER_COLORS.length];
-        tempHelperIcon = 'fa-cat';
+        tempHelperIcon = '🐱';
       }
 
       renderHelperEditorPickers();
@@ -1564,11 +1856,11 @@
           <div class="flex items-center gap-2.5">
             <span class="text-[11px] font-bold text-slate-400 w-4">${idx + 1}.</span>
             <div class="w-9 h-9 rounded-xl flex items-center justify-center text-white text-sm shadow-xs" style="background:${h.color}">
-              <i class="fa-solid ${h.icon}"></i>
+              ${renderHelperIconHtml(h.icon)}
             </div>
             <div>
               <div class="text-xs font-extrabold text-slate-800">${h.name}</div>
-              <div class="text-[10px] text-slate-400">專屬圖示與顏色</div>
+              <div class="text-[10px] text-slate-400">${h.icon.startsWith('fa-') ? '經典圖示' : 'Emoji 圖示'}</div>
             </div>
           </div>
           <div class="flex items-center gap-1.5">
@@ -1598,8 +1890,20 @@
     }
 
     /**************************************************************
-     * 7. 甘特圖左右切換日期函數
+     * 7. 月份切換、甘特圖日期切換、全螢幕與公告彈窗控制
      **************************************************************/
+    function changeMonthByDelta(deltaMonths, swipeDirection = null) {
+      currentMonth += deltaMonths;
+      if (currentMonth < 0) {
+        currentMonth = 11;
+        currentYear--;
+      } else if (currentMonth > 11) {
+        currentMonth = 0;
+        currentYear++;
+      }
+      renderCalendar(swipeDirection);
+    }
+
     function shiftSelectedDateByDays(deltaDays) {
       const nextDateStr = addDaysToDateStr(selectedDateStr, deltaDays);
       selectedDateStr = nextDateStr;
@@ -1608,6 +1912,53 @@
       currentMonth = m - 1;
       const direction = deltaDays > 0 ? 'left' : 'right';
       refreshAllViews(direction);
+    }
+
+    function toggleFullScreenMode() {
+      const appShell = document.getElementById('appShell');
+      const bottomNav = document.getElementById('bottomNavBar');
+      const iconEl = document.getElementById('fullscreenIcon');
+
+      const doc = window.document;
+      const docEl = doc.documentElement;
+      const requestFullScreen = docEl.requestFullscreen || docEl.webkitRequestFullScreen || docEl.mozRequestFullScreen || docEl.msRequestFullscreen;
+      const exitFullScreen = doc.exitFullscreen || doc.webkitExitFullscreen || doc.mozCancelFullScreen || doc.msExitFullscreen;
+      const isNativeFull = doc.fullscreenElement || doc.webkitFullscreenElement || doc.mozFullScreenElement || doc.msFullscreenElement;
+
+      const isCurrentlyExpanded = appShell.classList.contains('expanded-fullscreen') || Boolean(isNativeFull);
+
+      if (!isCurrentlyExpanded) {
+        appShell.classList.add('expanded-fullscreen');
+        bottomNav.classList.remove('max-w-[430px]');
+        iconEl.classList.remove('fa-expand');
+        iconEl.classList.add('fa-compress');
+        if (requestFullScreen) {
+          try { requestFullScreen.call(docEl); } catch (e) {}
+        }
+      } else {
+        appShell.classList.remove('expanded-fullscreen');
+        bottomNav.classList.add('max-w-[430px]');
+        iconEl.classList.remove('fa-compress');
+        iconEl.classList.add('fa-expand');
+        if (isNativeFull && exitFullScreen) {
+          try { exitFullScreen.call(doc); } catch (e) {}
+        }
+      }
+      setTimeout(() => renderGanttChart(), 260);
+    }
+
+    function openAnnouncementModal() {
+      const modal = document.getElementById('announcementModal');
+      const input = document.getElementById('announcementInput');
+      input.value = announcementText;
+      modal.classList.remove('hidden');
+      modal.classList.add('flex');
+    }
+
+    function closeAnnouncementModal() {
+      const modal = document.getElementById('announcementModal');
+      modal.classList.add('hidden');
+      modal.classList.remove('flex');
     }
 
     /**************************************************************
@@ -1625,6 +1976,24 @@
           pressTimer = null;
         }
       };
+
+      // 全螢幕按鈕
+      document.getElementById('fullscreenBtn').addEventListener('click', toggleFullScreenMode);
+
+      // 頂部公告欄點擊與編輯儲存
+      document.getElementById('announcementBar').addEventListener('click', openAnnouncementModal);
+      document.getElementById('navAnnouncementBtn').addEventListener('click', openAnnouncementModal);
+      document.getElementById('closeAnnouncementModalBtn').addEventListener('click', closeAnnouncementModal);
+      document.getElementById('saveAnnouncementBtn').addEventListener('click', () => {
+        const val = document.getElementById('announcementInput').value;
+        saveAnnouncement(val);
+        closeAnnouncementModal();
+      });
+      document.querySelectorAll('.announcement-tpl-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          document.getElementById('announcementInput').value = btn.getAttribute('data-template');
+        });
+      });
 
       // 長按照顧者圖示或甘特圖時間條 -> 彈出編輯/刪除選單
       appShell.addEventListener('pointerdown', (e) => {
@@ -1647,7 +2016,7 @@
         if (e.target.closest('[data-entry-id]')) e.preventDefault();
       });
 
-      // 日曆格點選：直接切換日期並更新下方甘特圖與列表 (不彈窗)
+      // 日曆格點選：直接切換日期並更新下方甘特圖與列表
       document.getElementById('calendarGrid').addEventListener('click', (e) => {
         if (longPressTriggered) {
           longPressTriggered = false;
@@ -1663,6 +2032,31 @@
         currentMonth = m - 1;
         refreshAllViews();
       });
+
+      // 日曆區域左右滑動手勢 (Swipe Left / Right 切換下一個月 / 上一個月)
+      const calendarSwipeContainer = document.getElementById('calendarSwipeContainer');
+      let calTouchStartX = 0;
+      let calTouchStartY = 0;
+
+      calendarSwipeContainer.addEventListener('touchstart', (e) => {
+        if (!e.touches || e.touches.length === 0) return;
+        calTouchStartX = e.touches[0].clientX;
+        calTouchStartY = e.touches[0].clientY;
+      }, { passive: true });
+
+      calendarSwipeContainer.addEventListener('touchend', (e) => {
+        if (!e.changedTouches || e.changedTouches.length === 0) return;
+        const dx = e.changedTouches[0].clientX - calTouchStartX;
+        const dy = e.changedTouches[0].clientY - calTouchStartY;
+        if (Math.abs(dx) > 45 && Math.abs(dx) > Math.abs(dy) * 1.3) {
+          clearPressTimer();
+          if (dx < 0) {
+            changeMonthByDelta(1, 'left');  // 向左滑 -> 下一個月
+          } else {
+            changeMonthByDelta(-1, 'right'); // 向右滑 -> 上一個月
+          }
+        }
+      }, { passive: true });
 
       // 頂部照顧者篩選列
       document.getElementById('helperLegendBar').addEventListener('click', (e) => {
@@ -1680,7 +2074,7 @@
         openActionMenuForEntry(btn.getAttribute('data-entry-id'));
       });
 
-      // 甘特圖左右按鈕與左右滑動手勢 (Swipe Left / Right)
+      // 甘特圖左右按鈕與左右滑動手勢 (Swipe Left / Right 切換日期)
       document.getElementById('ganttPrevDayBtn').addEventListener('click', () => shiftSelectedDateByDays(-1));
       document.getElementById('ganttNextDayBtn').addEventListener('click', () => shiftSelectedDateByDays(1));
 
@@ -1701,25 +2095,16 @@
         if (Math.abs(dx) > 42 && Math.abs(dx) > Math.abs(dy) * 1.3) {
           clearPressTimer();
           if (dx < 0) {
-            shiftSelectedDateByDays(1); // 向左滑 -> 下一日
+            shiftSelectedDateByDays(1);
           } else {
-            shiftSelectedDateByDays(-1); // 向右滑 -> 前一日
+            shiftSelectedDateByDays(-1);
           }
         }
       }, { passive: true });
 
-      // 月份切換與週起始切換
-      document.getElementById('prevMonthBtn').addEventListener('click', () => {
-        if (currentMonth === 0) { currentMonth = 11; currentYear--; }
-        else { currentMonth--; }
-        renderCalendar();
-      });
-
-      document.getElementById('nextMonthBtn').addEventListener('click', () => {
-        if (currentMonth === 11) { currentMonth = 0; currentYear++; }
-        else { currentMonth++; }
-        renderCalendar();
-      });
+      // 月份切換按鈕與週起始切換
+      document.getElementById('prevMonthBtn').addEventListener('click', () => changeMonthByDelta(-1, 'right'));
+      document.getElementById('nextMonthBtn').addEventListener('click', () => changeMonthByDelta(1, 'left'));
 
       document.getElementById('toggleWeekStartBtn').addEventListener('click', () => {
         weekStartsOnMonday = !weekStartsOnMonday;
@@ -1890,6 +2275,16 @@
         renderHelperEditorPickers();
       });
 
+      // 自訂輸入 Emoji 即時更新
+      document.getElementById('customEmojiInput').addEventListener('input', (e) => {
+        const val = e.target.value.trim();
+        if (val) {
+          const emojis = Array.from(val);
+          tempHelperIcon = emojis.slice(0, 2).join('');
+          updateHelperIconPreviewBadge();
+        }
+      });
+
       document.getElementById('saveHelperBtn').addEventListener('click', () => {
         const id = document.getElementById('editingHelperId').value;
         const name = document.getElementById('helperNameInput').value.trim();
@@ -1948,19 +2343,20 @@
       document.getElementById('navCalendarBtn').addEventListener('click', () => {
         closeShiftFormModal();
         closeHelperManagerModal();
+        closeAnnouncementModal();
       });
 
-      // 視窗大小改變時重新計算跑馬燈
       window.addEventListener('resize', () => {
         renderGanttChart();
       });
     }
 
-    // 啟動應用程式
+    // 啟動應用程式與雲端同步
     checkPinVerification();
     bindPinEvents();
     bindGlobalEvents();
     refreshAllViews();
+    initFirebaseCloudSync();
   </script>
 </body>
 </html>
