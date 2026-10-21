@@ -581,4 +581,1120 @@
             <div class="flex items-center justify-between mb-1.5">
               <label class="block text-xs font-bold text-slate-700">2. 選擇更期分類</label>
               <button type="button" id="fullDayQuickBtn" class="text-[11px] font-extrabold text-white bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600 px-3 py-1 rounded-full shadow-xs flex items-center gap-1 active:scale-95 transition">
-                <i class="fa-solid fa-clock-
+                <i class="fa-solid fa-clock-rotate-left text-[10px]"></i>
+                <span>全日 (00:00–23:59)</span>
+              </button>
+            </div>
+            <div class="grid grid-cols-3 gap-2">
+              <button type="button" data-shift="morning" class="shift-preset-btn py-2 px-2 rounded-xl border text-xs font-bold flex flex-col items-center gap-0.5 transition">
+                <i class="fa-solid fa-sun text-amber-500 text-sm"></i>
+                <span>早更</span>
+                <span class="text-[9px] font-normal text-slate-400">06:00–11:59</span>
+              </button>
+              <button type="button" data-shift="afternoon" class="shift-preset-btn py-2 px-2 rounded-xl border text-xs font-bold flex flex-col items-center gap-0.5 transition">
+                <i class="fa-solid fa-cloud-sun text-orange-500 text-sm"></i>
+                <span>午更</span>
+                <span class="text-[9px] font-normal text-slate-400">12:00–17:59</span>
+              </button>
+              <button type="button" data-shift="night" class="shift-preset-btn py-2 px-2 rounded-xl border text-xs font-bold flex flex-col items-center gap-0.5 transition">
+                <i class="fa-solid fa-moon text-indigo-500 text-sm"></i>
+                <span>夜更</span>
+                <span class="text-[9px] font-normal text-slate-400">18:00–05:59</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- 2.5 自訂常用時段 (Preset Customized Time Periods) 一鍵快填區 -->
+          <div class="bg-pink-50/60 p-3 rounded-2xl border border-pink-100 space-y-2.5">
+            <div class="flex items-center justify-between">
+              <div class="flex items-center gap-1.5">
+                <i class="fa-solid fa-bolt text-pink-500 text-xs"></i>
+                <span class="text-xs font-extrabold text-slate-700">自訂常用時段 (點擊一鍵快填)</span>
+              </div>
+              <button type="button" id="toggleNewPresetCreatorBtn" class="text-[11px] font-bold text-pink-600 hover:text-pink-700 bg-white px-2.5 py-0.5 rounded-full border border-pink-200 shadow-2xs transition">
+                + 新增自訂時段
+              </button>
+            </div>
+
+            <!-- 常用時段按鈕列表 -->
+            <div id="customPresetsGrid" class="flex flex-wrap gap-1.5"></div>
+
+            <!-- 新增自訂常用時段摺疊表單 -->
+            <div id="newPresetCreatorPanel" class="hidden bg-white p-2.5 rounded-xl border border-pink-200 space-y-2">
+              <div class="flex items-center justify-between">
+                <span class="text-[11px] font-extrabold text-slate-700">建立新的常用時段預設</span>
+                <button type="button" id="closePresetCreatorBtn" class="text-[10px] text-slate-400 hover:text-slate-600">收起</button>
+              </div>
+              <div class="grid grid-cols-2 gap-2">
+                <div>
+                  <label class="block text-[10px] font-bold text-slate-500 mb-0.5">時段名稱 (選填)</label>
+                  <input id="newPresetNameInput" type="text" placeholder="例：日間幫手 / 婆婆更" class="w-full rounded-lg border border-slate-200 px-2 py-1 text-xs font-bold text-slate-800" />
+                </div>
+                <div>
+                  <label class="block text-[10px] font-bold text-slate-500 mb-0.5">是否跨日</label>
+                  <select id="newPresetDayOffsetSelect" class="w-full rounded-lg border border-slate-200 px-2 py-1 text-xs font-bold text-slate-800 bg-white">
+                    <option value="0">當日結束</option>
+                    <option value="1">翌日結束 (+1日)</option>
+                  </select>
+                </div>
+              </div>
+              <div class="grid grid-cols-2 gap-2">
+                <div>
+                  <label class="block text-[10px] font-bold text-slate-500 mb-0.5">開始時間</label>
+                  <input id="newPresetStartInput" type="time" value="09:00" class="w-full rounded-lg border border-slate-200 px-2 py-1 text-xs font-bold text-slate-800" />
+                </div>
+                <div>
+                  <label class="block text-[10px] font-bold text-slate-500 mb-0.5">結束時間</label>
+                  <input id="newPresetEndInput" type="time" value="18:00" class="w-full rounded-lg border border-slate-200 px-2 py-1 text-xs font-bold text-slate-800" />
+                </div>
+              </div>
+              <button type="button" id="saveCustomPresetBtn" class="w-full py-1.5 rounded-lg bg-pink-500 hover:bg-pink-600 text-white font-bold text-xs transition">
+                儲存為常用時段按鈕
+              </button>
+            </div>
+          </div>
+
+          <!-- 3. 開始日期與時間 / 結束日期與時間 -->
+          <div class="bg-slate-50 p-3 rounded-2xl border border-slate-200/80 space-y-3">
+            <div class="flex items-center justify-between gap-1">
+              <span class="text-xs font-bold text-slate-700">3. 設定開始與結束日期時間</span>
+              <div class="flex items-center gap-1.5">
+                <span id="overnightBadge" class="hidden text-[10px] font-bold bg-indigo-100 text-indigo-700 px-2 py-0.5 rounded-full">
+                  <i class="fa-solid fa-moon mr-1"></i>跨日排班
+                </span>
+                <button type="button" id="saveCurrentTimeAsPresetBtn" class="text-[10px] font-bold text-amber-700 bg-amber-100 hover:bg-amber-200 px-2 py-0.5 rounded-full transition flex items-center gap-1" title="將目前輸入的時間存為上方常用按鈕">
+                  <i class="fa-solid fa-star text-[9px] text-amber-500"></i>存為常用
+                </button>
+              </div>
+            </div>
+
+            <div class="grid grid-cols-2 gap-2.5">
+              <div>
+                <label class="block text-[11px] font-bold text-slate-500 mb-1">開始日期</label>
+                <input id="shiftStartDateInput" type="date" required class="w-full rounded-xl border border-slate-200 bg-white px-2.5 py-2 text-xs font-semibold text-slate-800 focus:outline-none focus:border-pink-400" />
+              </div>
+              <div>
+                <label class="block text-[11px] font-bold text-slate-500 mb-1">開始時間 (24小時制)</label>
+                <input id="shiftStartInput" type="time" required class="w-full rounded-xl border border-slate-200 bg-white px-2.5 py-2 text-xs font-semibold text-slate-800 focus:outline-none focus:border-pink-400" />
+              </div>
+            </div>
+
+            <div class="grid grid-cols-2 gap-2.5">
+              <div>
+                <label class="block text-[11px] font-bold text-slate-500 mb-1">結束日期 (可跨日)</label>
+                <input id="shiftEndDateInput" type="date" required class="w-full rounded-xl border border-slate-200 bg-white px-2.5 py-2 text-xs font-semibold text-slate-800 focus:outline-none focus:border-pink-400" />
+              </div>
+              <div>
+                <label class="block text-[11px] font-bold text-slate-500 mb-1">結束時間 (24小時制)</label>
+                <input id="shiftEndInput" type="time" required class="w-full rounded-xl border border-slate-200 bg-white px-2.5 py-2 text-xs font-semibold text-slate-800 focus:outline-none focus:border-pink-400" />
+              </div>
+            </div>
+            <p class="text-[10px] text-slate-400 leading-relaxed">
+              <i class="fa-solid fa-circle-info mr-1 text-pink-400"></i>點擊上方「自訂常用時段」可一鍵填入時間；或手動輸入時間後點「⭐ 存為常用」方便日後快速排班。
+            </p>
+          </div>
+
+          <button type="submit" class="w-full py-3 rounded-xl bg-gradient-to-r from-pink-500 to-rose-500 text-white font-bold text-sm shadow-md shadow-pink-500/20 active:scale-99 transition">
+            儲存並同步排班
+          </button>
+        </form>
+      </div>
+    </div>
+
+    <!-- 彈窗 2：長按圖示動作選單 (編輯 / 刪除) -->
+    <div id="longPressActionModal" class="fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-xs hidden items-center justify-center p-6">
+      <div class="bg-white w-full max-w-[320px] rounded-3xl p-5 shadow-2xl text-center">
+        <div id="actionMenuHelperBadge" class="w-12 h-12 rounded-2xl mx-auto flex items-center justify-center text-white text-xl shadow-md mb-2.5"></div>
+        <h4 id="actionMenuTitle" class="text-sm font-extrabold text-slate-800">照顧者排班</h4>
+        <p id="actionMenuSubtitle" class="text-xs text-slate-500 mt-0.5 mb-4"></p>
+
+        <div class="space-y-2">
+          <button id="editEntryBtn" type="button" class="w-full py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold text-xs flex items-center justify-center gap-2 transition">
+            <i class="fa-solid fa-pen text-blue-500"></i>
+            <span>編輯排班時段</span>
+          </button>
+          <button id="deleteEntryBtn" type="button" class="w-full py-2.5 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-600 font-bold text-xs flex items-center justify-center gap-2 transition">
+            <i class="fa-solid fa-trash-can"></i>
+            <span>刪除此排班</span>
+          </button>
+          <button id="cancelActionMenuBtn" type="button" class="w-full py-2 rounded-xl text-slate-400 font-semibold text-xs">
+            取消
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 彈窗 3：照顧者管理及喜愛圖示設定 (支援 Emoji + 人物 + 動物圖示) -->
+    <div id="helperManagerModal" class="fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-xs hidden items-end justify-center">
+      <div class="bg-white w-full max-w-[430px] rounded-t-3xl p-5 max-h-[88dvh] overflow-y-auto shadow-2xl">
+        <div class="flex items-center justify-between pb-3 border-b border-slate-100">
+          <div>
+            <h3 class="text-base font-extrabold text-slate-800">照顧者及專屬圖示設定</h3>
+            <p class="text-[11px] text-slate-400">可揀選 Emoji、人物或動物圖示，或新增/刪除照顧者</p>
+          </div>
+          <button id="closeHelperModalBtn" type="button" class="w-8 h-8 rounded-full bg-slate-100 text-slate-500 flex items-center justify-center">
+            <i class="fa-solid fa-xmark"></i>
+          </button>
+        </div>
+
+        <div class="mt-3">
+          <button id="showNewHelperFormBtn" type="button" class="w-full py-2.5 rounded-xl border-2 border-dashed border-pink-300 text-pink-600 bg-pink-50/50 hover:bg-pink-50 font-bold text-xs flex items-center justify-center gap-1.5 transition">
+            <i class="fa-solid fa-user-plus"></i>
+            <span>+ 新增照顧者</span>
+          </button>
+        </div>
+
+        <!-- 新增/編輯照顧者表單 -->
+        <div id="helperEditorCard" class="hidden mt-3 bg-slate-50 rounded-2xl p-3.5 border border-slate-200 space-y-3">
+          <div class="flex items-center justify-between">
+            <h4 id="helperEditorTitle" class="text-xs font-extrabold text-slate-700">新增照顧者</h4>
+            <button id="cancelHelperEditBtn" type="button" class="text-[11px] text-slate-400 hover:text-slate-600">關閉</button>
+          </div>
+          <input type="hidden" id="editingHelperId" value="" />
+          <div>
+            <label class="block text-[11px] font-bold text-slate-600 mb-1">稱呼 (例如：媽媽、工人、姑姐)</label>
+            <input id="helperNameInput" type="text" placeholder="請輸入稱呼" class="w-full rounded-xl border border-slate-200 bg-white px-3 py-1.5 text-xs font-bold text-slate-800" />
+          </div>
+          <div>
+            <label class="block text-[11px] font-bold text-slate-600 mb-1">代表底色</label>
+            <div id="helperColorPicker" class="flex items-center gap-2 flex-wrap"></div>
+          </div>
+
+          <!-- 自訂輸入任意 Emoji 欄位 -->
+          <div class="bg-white p-2.5 rounded-xl border border-pink-200/80 flex items-center justify-between gap-2">
+            <div class="min-w-0">
+              <label class="block text-[11px] font-bold text-pink-600">自訂輸入喜愛 Emoji 圖示</label>
+              <p class="text-[10px] text-slate-400">可用手機鍵盤直接輸入任何 Emoji（如 🧸、🍼、🦸‍♀️）</p>
+            </div>
+            <div class="flex items-center gap-1.5 shrink-0">
+              <input id="customEmojiInput" type="text" maxlength="4" placeholder="😊" class="w-12 h-9 text-center text-base rounded-xl border border-slate-200 bg-slate-50 focus:bg-white focus:border-pink-400 focus:outline-none" />
+              <div id="currentIconPreviewBadge" class="w-9 h-9 rounded-xl flex items-center justify-center text-white text-sm shadow-xs"></div>
+            </div>
+          </div>
+
+          <div>
+            <label class="block text-[11px] font-bold text-slate-600 mb-1">或從圖示庫點選 (Emoji / 人物角色 / 可愛動物)</label>
+            <div id="helperIconPicker" class="space-y-2.5 max-h-56 overflow-y-auto pr-1"></div>
+          </div>
+          <button id="saveHelperBtn" type="button" class="w-full py-2 rounded-xl bg-pink-500 text-white font-bold text-xs shadow-sm">
+            儲存並同步照顧者資料
+          </button>
+        </div>
+
+        <div id="helperManagerList" class="space-y-2.5 mt-4"></div>
+      </div>
+    </div>
+
+  </div>
+
+  <script>
+    /**************************************************************
+     * 0. 首次使用 PIN 驗證鎖 (預設家庭密碼: 0511)
+     **************************************************************/
+    const PIN_STORAGE_KEY = 'bb_care_pin_verified_v1';
+    const TARGET_PIN = '0511';
+    let currentPinInput = '';
+
+    function checkPinVerification() {
+      let verified = false;
+      try {
+        verified = localStorage.getItem(PIN_STORAGE_KEY) === 'true';
+      } catch (e) {
+        verified = false;
+      }
+      const pinModal = document.getElementById('pinLockModal');
+      if (!verified) {
+        pinModal.classList.remove('hidden');
+      } else {
+        pinModal.classList.add('hidden');
+      }
+    }
+
+    function updatePinDots() {
+      const dots = document.querySelectorAll('#pinDotsContainer .pin-dot');
+      dots.forEach((dot, idx) => {
+        if (idx < currentPinInput.length) {
+          dot.classList.add('bg-pink-400', 'scale-110');
+        } else {
+          dot.classList.remove('bg-pink-400', 'scale-110');
+        }
+      });
+    }
+
+    function handlePinDigit(digit) {
+      const errMsg = document.getElementById('pinErrorMsg');
+      errMsg.classList.add('opacity-0');
+      if (currentPinInput.length >= 4) return;
+      currentPinInput += String(digit);
+      updatePinDots();
+
+      if (currentPinInput.length === 4) {
+        if (currentPinInput === TARGET_PIN) {
+          try {
+            localStorage.setItem(PIN_STORAGE_KEY, 'true');
+          } catch (e) {}
+          setTimeout(() => {
+            document.getElementById('pinLockModal').classList.add('hidden');
+            currentPinInput = '';
+            updatePinDots();
+            pullLatestFromCloudNow();
+          }, 150);
+        } else {
+          const dotsContainer = document.getElementById('pinDotsContainer');
+          dotsContainer.classList.remove('pin-shake');
+          void dotsContainer.offsetWidth;
+          dotsContainer.classList.add('pin-shake');
+          errMsg.classList.remove('opacity-0');
+          setTimeout(() => {
+            currentPinInput = '';
+            updatePinDots();
+          }, 380);
+        }
+      }
+    }
+
+    function bindPinEvents() {
+      document.querySelectorAll('.pin-key').forEach(btn => {
+        btn.addEventListener('click', () => {
+          handlePinDigit(btn.getAttribute('data-pin-key'));
+        });
+      });
+
+      document.getElementById('pinClearBtn').addEventListener('click', () => {
+        currentPinInput = '';
+        updatePinDots();
+      });
+
+      document.getElementById('pinBackspaceBtn').addEventListener('click', () => {
+        currentPinInput = currentPinInput.slice(0, -1);
+        updatePinDots();
+      });
+
+      document.getElementById('lockAppBtn').addEventListener('click', () => {
+        try {
+          localStorage.removeItem(PIN_STORAGE_KEY);
+        } catch (e) {}
+        currentPinInput = '';
+        updatePinDots();
+        document.getElementById('pinErrorMsg').classList.add('opacity-0');
+        document.getElementById('pinLockModal').classList.remove('hidden');
+      });
+
+      window.addEventListener('keydown', (e) => {
+        const pinModal = document.getElementById('pinLockModal');
+        if (pinModal.classList.contains('hidden')) return;
+        if (e.key >= '0' && e.key <= '9') {
+          handlePinDigit(e.key);
+        } else if (e.key === 'Backspace') {
+          currentPinInput = currentPinInput.slice(0, -1);
+          updatePinDots();
+        } else if (e.key === 'Escape') {
+          currentPinInput = '';
+          updatePinDots();
+        }
+      });
+    }
+
+    /**************************************************************
+     * 1. 圖示庫、預設照顧者與預設常用時段
+     **************************************************************/
+    const ICON_CATEGORIES = [
+      {
+        category: '精選 Emoji 表情與動物',
+        icons: [
+          { icon: '🤱', label: '媽媽餵哺' },
+          { icon: '👩', label: '媽媽' },
+          { icon: '👨', label: '爸爸' },
+          { icon: '👵', label: '嫲嫲/婆婆' },
+          { icon: '👴', label: '爺爺/公公' },
+          { icon: '👩‍🍼', label: '餵奶姐姐' },
+          { icon: '🧑‍🍼', label: '貼心照顧' },
+          { icon: '👶', label: '可愛BB' },
+          { icon: '🧚‍♀️', label: '神仙教母' },
+          { icon: '🦸‍♂️', label: '超人爸爸' },
+          { icon: '🐱', label: '貓咪' },
+          { icon: '🐶', label: '狗狗' },
+          { icon: '🐼', label: '熊貓' },
+          { icon: '🐰', label: '小兔' },
+          { icon: '🦊', label: '狐狸' },
+          { icon: '🐻', label: '小熊' },
+          { icon: '🐨', label: '無尾熊' },
+          { icon: '🐯', label: '小虎' },
+          { icon: '🦁', label: '獅子' },
+          { icon: '🐧', label: '企鵝' },
+          { icon: '🐣', label: '小雞' },
+          { icon: '🦄', label: '獨角獸' },
+          { icon: '🧸', label: '泰迪熊' },
+          { icon: '🍼', label: '奶樽' }
+        ]
+      },
+      {
+        category: '人物與家庭角色 (Font Awesome)',
+        icons: [
+          { icon: 'fa-person-breastfeeding', label: '餵哺/媽媽' },
+          { icon: 'fa-person-dress', label: '女性/媽媽' },
+          { icon: 'fa-person', label: '男性/爸爸' },
+          { icon: 'fa-person-cane', label: '長輩/爺嫲' },
+          { icon: 'fa-user-nurse', label: '護理/姐姐' },
+          { icon: 'fa-hands-holding-child', label: '抱BB' },
+          { icon: 'fa-baby', label: 'BB' },
+          { icon: 'fa-baby-carriage', label: 'BB車' },
+          { icon: 'fa-child-reaching', label: '活力孩童' },
+          { icon: 'fa-user-tie', label: '上班族爸爸' },
+          { icon: 'fa-user-doctor', label: '醫護' },
+          { icon: 'fa-user-astronaut', label: '太空人' },
+          { icon: 'fa-user-ninja', label: '超人幫手' },
+          { icon: 'fa-user-graduate', label: '博士' },
+          { icon: 'fa-face-smile-beam', label: '笑臉' },
+          { icon: 'fa-face-grin-hearts', label: '愛心臉' }
+        ]
+      },
+      {
+        category: '可愛動物圖示 (Font Awesome)',
+        icons: [
+          { icon: 'fa-cat', label: '小貓咪' },
+          { icon: 'fa-dog', label: '小狗狗' },
+          { icon: 'fa-paw', label: '小熊掌' },
+          { icon: 'fa-hippo', label: '小河馬' },
+          { icon: 'fa-otter', label: '小水獺' },
+          { icon: 'fa-dove', label: '和平鴿' },
+          { icon: 'fa-kiwi-bird', label: '奇異鳥' },
+          { icon: 'fa-crow', label: '小鳥' },
+          { icon: 'fa-fish-fins', label: '小魚兒' },
+          { icon: 'fa-shrimp', label: '小蝦米' },
+          { icon: 'fa-horse', label: '小馬' },
+          { icon: 'fa-cow', label: '乳牛' },
+          { icon: 'fa-frog', label: '小青蛙' },
+          { icon: 'fa-dragon', label: '小飛龍' },
+          { icon: 'fa-feather-pointed', label: '羽毛' },
+          { icon: 'fa-worm', label: '毛毛蟲' }
+        ]
+      }
+    ];
+
+    const HELPER_COLORS = [
+      '#EC4899', '#3B82F6', '#8B5CF6', '#0EA5E9',
+      '#F59E0B', '#10B981', '#F97316', '#EF4444',
+      '#14B8A6', '#6366F1'
+    ];
+
+    const DEFAULT_HELPERS = [
+      { id: 'h1', name: '媽媽', icon: 'fa-person-breastfeeding', color: '#EC4899' },
+      { id: 'h2', name: '爸爸', icon: 'fa-person',               color: '#3B82F6' },
+      { id: 'h3', name: '嫲嫲', icon: 'fa-person-dress',         color: '#8B5CF6' },
+      { id: 'h4', name: '爺爺', icon: 'fa-person-cane',          color: '#0EA5E9' },
+      { id: 'h5', name: '婆婆', icon: 'fa-cat',                  color: '#F59E0B' },
+      { id: 'h6', name: '公公', icon: 'fa-dog',                  color: '#10B981' },
+      { id: 'h7', name: '工人', icon: 'fa-hands-holding-child',  color: '#F97316' }
+    ];
+
+    const DEFAULT_TIME_PRESETS = [
+      { id: 'tp1', label: '日間全更', start: '08:00', end: '20:00', dayOffset: 0, shift: 'morning' },
+      { id: 'tp2', label: '通宵留宿', start: '20:00', end: '08:00', dayOffset: 1, shift: 'night' },
+      { id: 'tp3', label: '上午幫手', start: '09:00', end: '13:00', dayOffset: 0, shift: 'morning' },
+      { id: 'tp4', label: '下午幫手', start: '14:00', end: '19:00', dayOffset: 0, shift: 'afternoon' },
+      { id: 'tp5', label: '晚飯時段', start: '18:00', end: '22:00', dayOffset: 0, shift: 'night' }
+    ];
+
+    const SHIFT_META = {
+      morning:   { label: '早更', defaultStart: '06:00', defaultEnd: '11:59', badgeBg: '#FEF3C7', badgeText: '#B45309' },
+      afternoon: { label: '午更', defaultStart: '12:00', defaultEnd: '17:59', badgeBg: '#FFEDD5', badgeText: '#C2410C' },
+      night:     { label: '夜更', defaultStart: '18:00', defaultEnd: '05:59', badgeBg: '#E0E7FF', badgeText: '#4338CA' }
+    };
+
+    const STORAGE_KEY_HELPERS      = 'bb_care_helpers_v6_cloud';
+    const STORAGE_KEY_ENTRIES      = 'bb_care_entries_v6_cloud';
+    const STORAGE_KEY_PRESETS      = 'bb_care_presets_v6_cloud';
+    const STORAGE_KEY_WEEKSTART    = 'bb_care_weekstart_v6_cloud';
+    const STORAGE_KEY_ANNOUNCEMENT = 'bb_care_announcement_v6_cloud';
+    const STORAGE_KEY_LAST_UPDATED = 'bb_care_last_updated_ms_v6';
+    const DEFAULT_ANNOUNCEMENT     = '🍼 歡迎使用 BB 照顧排班日曆！請各位家人及姐姐確認每日交接時間，辛苦晒大家！💕';
+
+    const now = new Date();
+    let currentYear = now.getFullYear();
+    let currentMonth = now.getMonth();
+    let selectedDateStr = formatDateKey(now.getFullYear(), now.getMonth(), now.getDate());
+    let activeHelperFilter = 'ALL';
+    let weekStartsOnMonday = loadWeekStartPref();
+
+    let helpers = loadHelpersFromLocal();
+    let entries = loadEntriesFromLocal();
+    let customTimePresets = loadPresetsFromLocal();
+    let announcementText = loadAnnouncementFromLocal();
+    let localLastUpdatedMillis = Number(localStorage.getItem(STORAGE_KEY_LAST_UPDATED) || 0);
+    let lastRenderedDataSignature = '';
+
+    let selectedShiftPreset = 'morning';
+    let activeActionEntryId = null;
+    let tempHelperColor = HELPER_COLORS[0];
+    let tempHelperIcon = '🐱';
+
+    /**************************************************************
+     * 1.5 Firebase 雲端強效同步引擎 (防舊分頁覆蓋 + 每秒自動刷新)
+     **************************************************************/
+    const firebaseConfig = {
+      apiKey: "AIzaSyDKGV_ub5ZyH7Dz-5wJlo9uDYjjtOc7Adc",
+      authDomain: "bb-care-calendar.firebaseapp.com",
+      projectId: "bb-care-calendar",
+      storageBucket: "bb-care-calendar.firebasestorage.app",
+      messagingSenderId: "253996185863",
+      appId: "1:253996185863:web:7374094f36cc58aadeeda2"
+    };
+
+    let db = null;
+    let calendarDocRef = null;
+    let isMutatingCloud = false;
+
+    function computeDataSignature(hArr, eArr, pArr, annStr) {
+      try {
+        return JSON.stringify({ h: hArr, e: eArr, p: pArr, a: annStr });
+      } catch (e) {
+        return String(Date.now());
+      }
+    }
+
+    function updateCloudBadgeUI(status) {
+      const badge = document.getElementById('cloudSyncBadge');
+      const dot = document.getElementById('cloudSyncDot');
+      const text = document.getElementById('cloudSyncText');
+      const errBanner = document.getElementById('cloudErrorBanner');
+      if (!badge || !dot || !text) return;
+
+      if (status === 'synced') {
+        badge.className = 'inline-flex items-center gap-1 text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-emerald-50 text-emerald-600 border border-emerald-200 shrink-0 cursor-pointer';
+        dot.className = 'w-1.5 h-1.5 rounded-full bg-emerald-500 animate-ping';
+        text.textContent = '每秒雲端同步';
+        if (errBanner) errBanner.classList.add('hidden');
+      } else if (status === 'syncing') {
+        badge.className = 'inline-flex items-center gap-1 text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-amber-50 text-amber-600 border border-amber-200 shrink-0 cursor-pointer';
+        dot.className = 'w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse';
+        text.textContent = '同步中...';
+      } else if (status === 'permission_error') {
+        badge.className = 'inline-flex items-center gap-1 text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-rose-50 text-rose-600 border border-rose-200 shrink-0 cursor-pointer';
+        dot.className = 'w-1.5 h-1.5 rounded-full bg-rose-500';
+        text.textContent = '雲端權限未開';
+        if (errBanner) errBanner.classList.remove('hidden');
+      } else {
+        badge.className = 'inline-flex items-center gap-1 text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-slate-100 text-slate-500 border border-slate-200 shrink-0 cursor-pointer';
+        dot.className = 'w-1.5 h-1.5 rounded-full bg-slate-400';
+        text.textContent = '離線快取';
+      }
+    }
+
+    function applyCloudSnapshotData(data) {
+      if (!data || isMutatingCloud) return;
+
+      const remoteHelpers = (Array.isArray(data.helpers) && data.helpers.length > 0) ? data.helpers : helpers;
+      const remoteEntries = Array.isArray(data.entries)
+        ? data.entries.filter(e =>
+            e && e.id && e.helperId &&
+            isValidDateStr(e.startDate) &&
+            isValidDateStr(e.endDate) &&
+            e.startDate <= e.endDate &&
+            typeof e.start === 'string' &&
+            typeof e.end === 'string'
+          )
+        : entries;
+      const remotePresets = Array.isArray(data.customTimePresets) ? data.customTimePresets : customTimePresets;
+      const remoteAnn = (typeof data.announcementText === 'string' && data.announcementText.trim())
+        ? data.announcementText.trim()
+        : announcementText;
+
+      const newSig = computeDataSignature(remoteHelpers, remoteEntries, remotePresets, remoteAnn);
+      if (newSig === lastRenderedDataSignature) {
+        updateCloudBadgeUI('synced');
+        return;
+      }
+
+      helpers = remoteHelpers;
+      entries = remoteEntries;
+      customTimePresets = remotePresets;
+      announcementText = remoteAnn;
+      localLastUpdatedMillis = Number(data.lastUpdatedMillis || Date.now());
+      lastRenderedDataSignature = newSig;
+
+      saveAllStateToLocalCache();
+      refreshAllViews();
+
+      // 若視窗開啟中，同步更新清單但避免打斷輸入
+      const helperModal = document.getElementById('helperManagerModal');
+      if (helperModal && !helperModal.classList.contains('hidden')) {
+        renderHelperManagerList();
+      }
+      const shiftModal = document.getElementById('shiftFormModal');
+      if (shiftModal && !shiftModal.classList.contains('hidden')) {
+        renderCustomPresetsGrid();
+      }
+      updateCloudBadgeUI('synced');
+    }
+
+    function saveAllStateToLocalCache() {
+      try {
+        localStorage.setItem(STORAGE_KEY_HELPERS, JSON.stringify(helpers));
+        localStorage.setItem(STORAGE_KEY_ENTRIES, JSON.stringify(entries));
+        localStorage.setItem(STORAGE_KEY_PRESETS, JSON.stringify(customTimePresets));
+        localStorage.setItem(STORAGE_KEY_ANNOUNCEMENT, announcementText);
+        localStorage.setItem(STORAGE_KEY_LAST_UPDATED, String(localLastUpdatedMillis));
+      } catch (e) {}
+    }
+
+    /**
+     * 核心防覆蓋寫入函數：
+     * 每次修改（新增/編輯/刪除）前，必定先從雲端拉取最新一刻的資料，再套用本次變更！
+     * 徹底杜絕舊 Chrome 分頁把整個舊陣列覆蓋到雲端的問題。
+     */
+    async function commitCloudMutation(mutatorFn) {
+      isMutatingCloud = true;
+      updateCloudBadgeUI('syncing');
+
+      try {
+        if (calendarDocRef) {
+          let latestDoc = null;
+          try {
+            latestDoc = await calendarDocRef.get({ source: 'server' });
+          } catch (e) {
+            latestDoc = await calendarDocRef.get();
+          }
+
+          if (latestDoc && latestDoc.exists) {
+            const remote = latestDoc.data();
+            if (remote) {
+              if (Array.isArray(remote.helpers) && remote.helpers.length > 0) helpers = remote.helpers;
+              if (Array.isArray(remote.entries)) {
+                entries = remote.entries.filter(e =>
+                  e && e.id && e.helperId &&
+                  isValidDateStr(e.startDate) &&
+                  isValidDateStr(e.endDate)
+                );
+              }
+              if (Array.isArray(remote.customTimePresets)) customTimePresets = remote.customTimePresets;
+              if (typeof remote.announcementText === 'string' && remote.announcementText.trim()) {
+                announcementText = remote.announcementText.trim();
+              }
+            }
+          }
+        }
+      } catch (fetchErr) {
+        console.warn('讀取雲端最新狀態失敗，使用本機狀態套用變更:', fetchErr);
+      }
+
+      // 在最新資料基礎上執行本次修改
+      mutatorFn();
+
+      localLastUpdatedMillis = Date.now();
+      lastRenderedDataSignature = computeDataSignature(helpers, entries, customTimePresets, announcementText);
+      saveAllStateToLocalCache();
+      refreshAllViews();
+
+      if (!calendarDocRef) {
+        isMutatingCloud = false;
+        updateCloudBadgeUI('offline');
+        return;
+      }
+
+      try {
+        await calendarDocRef.set({
+          helpers: helpers,
+          entries: entries,
+          customTimePresets: customTimePresets,
+          announcementText: announcementText,
+          lastUpdatedMillis: localLastUpdatedMillis,
+          lastUpdated: firebase.firestore.FieldValue.serverTimestamp()
+        }, { merge: true });
+        isMutatingCloud = false;
+        updateCloudBadgeUI('synced');
+      } catch (writeErr) {
+        isMutatingCloud = false;
+        console.error('寫入雲端失敗:', writeErr);
+        if (writeErr && writeErr.code === 'permission-denied') {
+          updateCloudBadgeUI('permission_error');
+        } else {
+          updateCloudBadgeUI('offline');
+        }
+      }
+    }
+
+    /**
+     * 主動從雲端伺服器拉取最新資料 (每秒自動執行 + 切換分頁瞬間執行)
+     */
+    async function pullLatestFromCloudNow() {
+      if (!calendarDocRef || isMutatingCloud) return;
+      try {
+        let doc = null;
+        try {
+          doc = await calendarDocRef.get({ source: 'server' });
+        } catch (serverErr) {
+          doc = await calendarDocRef.get();
+        }
+        if (doc && doc.exists) {
+          applyCloudSnapshotData(doc.data());
+        } else if (doc && !doc.exists && !doc.metadata.fromCache) {
+          // 僅當伺服器端確認完全未建立過文件時，才進行首次初始化上傳
+          await commitCloudMutation(() => {});
+        }
+      } catch (err) {
+        if (err && err.code === 'permission-denied') {
+          updateCloudBadgeUI('permission_error');
+        }
+      }
+    }
+
+    function initFirebaseCloudSync() {
+      try {
+        if (typeof firebase === 'undefined') {
+          updateCloudBadgeUI('offline');
+          return;
+        }
+        if (!firebase.apps.length) {
+          firebase.initializeApp(firebaseConfig);
+        }
+        db = firebase.firestore();
+        calendarDocRef = db.collection('family_care').doc('shared_calendar');
+
+        // 1. 即時雙向監聽 (onSnapshot)
+        calendarDocRef.onSnapshot((doc) => {
+          if (doc.exists) {
+            applyCloudSnapshotData(doc.data());
+          } else if (!doc.metadata.fromCache) {
+            commitCloudMutation(() => {});
+          }
+        }, (error) => {
+          console.error('Firebase 監聽錯誤:', error);
+          if (error && error.code === 'permission-denied') {
+            updateCloudBadgeUI('permission_error');
+          } else {
+            updateCloudBadgeUI('offline');
+          }
+        });
+
+        // 2. 每秒 (1000ms) 自動向雲端拉取最新狀態，確保跨裝置/跨瀏覽器零延遲一致
+        setInterval(() => {
+          if (document.visibilityState === 'visible') {
+            pullLatestFromCloudNow();
+          }
+        }, 1000);
+
+        // 3. 當用戶切換回此瀏覽器分頁 (例如從其他瀏覽器切回 Chrome) 時，立即同步雲端最新資料
+        document.addEventListener('visibilitychange', () => {
+          if (document.visibilityState === 'visible') {
+            pullLatestFromCloudNow();
+          }
+        });
+        window.addEventListener('focus', () => {
+          pullLatestFromCloudNow();
+        });
+        window.addEventListener('pageshow', () => {
+          pullLatestFromCloudNow();
+        });
+
+      } catch (err) {
+        console.error('Firebase 初始化失敗:', err);
+        updateCloudBadgeUI('offline');
+      }
+    }
+
+    /**************************************************************
+     * 2. 工具、圖示渲染 (支援 Font Awesome 及 Emoji) 與日期驗證函數
+     **************************************************************/
+    function renderHelperIconHtml(iconStr, extraClass = '') {
+      if (!iconStr) return `<i class="fa-solid fa-user ${extraClass}"></i>`;
+      const trimmed = String(iconStr).trim();
+      if (trimmed.startsWith('fa-')) {
+        return `<i class="fa-solid ${trimmed} ${extraClass}"></i>`;
+      }
+      return `<span class="inline-flex items-center justify-center leading-none select-none ${extraClass}" style="font-style:normal;">${trimmed}</span>`;
+    }
+
+    function pad2(n) {
+      return String(n).padStart(2, '0');
+    }
+
+    function formatDateKey(year, monthIndex, day) {
+      return `${year}-${pad2(monthIndex + 1)}-${pad2(day)}`;
+    }
+
+    function isValidDateStr(str) {
+      if (typeof str !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(str)) return false;
+      const [y, m, d] = str.split('-').map(Number);
+      const dt = new Date(y, m - 1, d);
+      return dt.getFullYear() === y && dt.getMonth() === m - 1 && dt.getDate() === d;
+    }
+
+    function addDaysToDateStr(dateStr, daysToAdd) {
+      if (!isValidDateStr(dateStr)) return selectedDateStr;
+      const [y, m, d] = dateStr.split('-').map(Number);
+      const dt = new Date(y, m - 1, d + daysToAdd);
+      return formatDateKey(dt.getFullYear(), dt.getMonth(), dt.getDate());
+    }
+
+    function formatDisplayDate(dateStr) {
+      if (!isValidDateStr(dateStr)) return '';
+      const [y, m, d] = dateStr.split('-').map(Number);
+      const dateObj = new Date(y, m - 1, d);
+      const weekdays = ['週日', '週一', '週二', '週三', '週四', '週五', '週六'];
+      return `${m}月${d}日 (${weekdays[dateObj.getDay()]})`;
+    }
+
+    function formatShortDate(dateStr) {
+      if (!isValidDateStr(dateStr)) return '';
+      const [, m, d] = dateStr.split('-').map(Number);
+      return `${d}/${m}`;
+    }
+
+    function loadAnnouncementFromLocal() {
+      try {
+        const saved = localStorage.getItem(STORAGE_KEY_ANNOUNCEMENT);
+        return saved && saved.trim() ? saved.trim() : DEFAULT_ANNOUNCEMENT;
+      } catch (e) {
+        return DEFAULT_ANNOUNCEMENT;
+      }
+    }
+
+    function renderAnnouncementBar() {
+      const displayEl = document.getElementById('announcementTextDisplay');
+      if (displayEl) {
+        displayEl.textContent = announcementText;
+      }
+    }
+
+    function loadWeekStartPref() {
+      try {
+        const saved = localStorage.getItem(STORAGE_KEY_WEEKSTART);
+        return saved === null ? true : saved === 'monday';
+      } catch (e) {
+        return true;
+      }
+    }
+
+    function loadHelpersFromLocal() {
+      try {
+        const raw = localStorage.getItem(STORAGE_KEY_HELPERS);
+        if (raw) {
+          const parsed = JSON.parse(raw);
+          if (Array.isArray(parsed) && parsed.length > 0 && parsed.every(h => h && h.id && h.name && h.icon && h.color)) {
+            return parsed;
+          }
+        }
+      } catch (e) {}
+      return JSON.parse(JSON.stringify(DEFAULT_HELPERS));
+    }
+
+    function loadPresetsFromLocal() {
+      try {
+        const raw = localStorage.getItem(STORAGE_KEY_PRESETS);
+        if (raw) {
+          const parsed = JSON.parse(raw);
+          if (Array.isArray(parsed)) {
+            return parsed;
+          }
+        }
+      } catch (e) {}
+      return JSON.parse(JSON.stringify(DEFAULT_TIME_PRESETS));
+    }
+
+    function loadEntriesFromLocal() {
+      try {
+        const raw = localStorage.getItem(STORAGE_KEY_ENTRIES);
+        if (raw !== null) {
+          const parsed = JSON.parse(raw);
+          if (Array.isArray(parsed)) {
+            // 保留用戶清空排班後的空陣列狀態，不會誤還原示範資料
+            return parsed.filter(e =>
+              e && e.id && e.helperId &&
+              isValidDateStr(e.startDate) &&
+              isValidDateStr(e.endDate) &&
+              e.startDate <= e.endDate &&
+              typeof e.start === 'string' &&
+              typeof e.end === 'string'
+            );
+          }
+        }
+      } catch (e) {}
+
+      // 首次使用且尚無任何紀錄時，提供初始示範資料
+      const todayKey = formatDateKey(now.getFullYear(), now.getMonth(), now.getDate());
+      const tmrKey = addDaysToDateStr(todayKey, 1);
+      const day3Key = addDaysToDateStr(todayKey, 2);
+
+      return [
+        { id: 'e1', startDate: todayKey, endDate: todayKey, helperId: 'h7', shift: 'night',     start: '00:00', end: '06:00' },
+        { id: 'e2', startDate: todayKey, endDate: todayKey, helperId: 'h1', shift: 'morning',   start: '06:00', end: '14:00' },
+        { id: 'e3', startDate: todayKey, endDate: todayKey, helperId: 'h3', shift: 'afternoon', start: '12:00', end: '18:00' },
+        { id: 'e4', startDate: todayKey, endDate: todayKey, helperId: 'h2', shift: 'night',     start: '18:00', end: '23:59' },
+        { id: 'e5', startDate: tmrKey,   endDate: tmrKey,   helperId: 'h5', shift: 'afternoon', start: '12:00', end: '19:00' },
+        { id: 'e6', startDate: tmrKey,   endDate: day3Key,  helperId: 'h7', shift: 'night',     start: '19:00', end: '11:00' }
+      ];
+    }
+
+    function getHelperById(id) {
+      return helpers.find(h => h.id === id) || helpers[0] || DEFAULT_HELPERS[0];
+    }
+
+    function timeToMinutes(tStr) {
+      if (!tStr || typeof tStr !== 'string' || !tStr.includes(':')) return 0;
+      const [hh, mm] = tStr.split(':').map(Number);
+      if (isNaN(hh) || isNaN(mm)) return 0;
+      return Math.max(0, Math.min(1439, hh * 60 + mm));
+    }
+
+    function inferShiftCategoryFromStartTime(startStr) {
+      const m = timeToMinutes(startStr);
+      if (m >= 360 && m < 720) return 'morning';
+      if (m >= 720 && m < 1080) return 'afternoon';
+      return 'night';
+    }
+
+    function getDaysDiff(startDateStr, endDateStr) {
+      if (!isValidDateStr(startDateStr) || !isValidDateStr(endDateStr)) return 0;
+      const [y1, m1, d1] = startDateStr.split('-').map(Number);
+      const [y2, m2, d2] = endDateStr.split('-').map(Number);
+      const dt1 = new Date(y1, m1 - 1, d1);
+      const dt2 = new Date(y2, m2 - 1, d2);
+      return Math.round((dt2 - dt1) / (1000 * 60 * 60 * 24));
+    }
+
+    function getSegmentsForDate(entry, targetDateStr) {
+      if (!entry || !isValidDateStr(entry.startDate) || !isValidDateStr(entry.endDate)) return [];
+      const sDate = entry.startDate;
+      const eDate = entry.endDate;
+      if (targetDateStr < sDate || targetDateStr > eDate) return [];
+      if (getDaysDiff(sDate, eDate) > 60) return [];
+
+      const sMin = timeToMinutes(entry.start);
+      const eMin = timeToMinutes(entry.end);
+
+      if (sDate === eDate) {
+        if (eMin >= sMin) {
+          return [[sMin, eMin]];
+        } else {
+          return [[sMin, 1439]];
+        }
+      }
+
+      if (targetDateStr === sDate) {
+        return [[sMin, 1439]];
+      } else if (targetDateStr === eDate) {
+        return [[0, eMin]];
+      } else {
+        return [[0, 1439]];
+      }
+    }
+
+    function getEntriesForDate(targetDateStr) {
+      return entries
+        .filter(e => {
+          if (activeHelperFilter !== 'ALL' && e.helperId !== activeHelperFilter) return false;
+          return getSegmentsForDate(e, targetDateStr).length > 0;
+        })
+        .sort((a, b) => {
+          const segA = getSegmentsForDate(a, targetDateStr)[0] || [0, 0];
+          const segB = getSegmentsForDate(b, targetDateStr)[0] || [0, 0];
+          return segA[0] - segB[0];
+        });
+    }
+
+    function evaluateDayCoverage(dateStr, rawEntriesForDate) {
+      const covered = new Uint8Array(1440);
+      rawEntriesForDate.forEach(entry => {
+        const segs = getSegmentsForDate(entry, dateStr);
+        segs.forEach(([startMin, endMin]) => {
+          const s = Math.max(0, Math.min(1439, startMin));
+          const e = Math.max(0, Math.min(1439, endMin));
+          for (let m = s; m <= e; m++) {
+            covered[m] = 1;
+          }
+        });
+      });
+
+      let coveredCount = 0;
+      for (let i = 0; i < 1440; i++) {
+        if (covered[i] === 1) coveredCount++;
+      }
+
+      return {
+        coveredMinutes: coveredCount,
+        isFull24h: coveredCount === 1440,
+        percent: Math.round((coveredCount / 1440) * 100)
+      };
+    }
+
+    function formatEntryRangeBadge(entry) {
+      const isMultiDay = entry.startDate !== entry.endDate;
+      if (!isMultiDay) {
+        return `${entry.start} – ${entry.end}`;
+      }
+      return `${formatShortDate(entry.startDate)} ${entry.start} → ${formatShortDate(entry.endDate)} ${entry.end}`;
+    }
+
+    /**************************************************************
+     * 3. 介面渲染函數
+     **************************************************************/
+    function renderHelperLegend() {
+      const bar = document.getElementById('helperLegendBar');
+      let html = `
+        <button type="button" data-filter="ALL" class="helper-filter-btn shrink-0 px-2.5 py-1 rounded-full text-[11px] font-bold transition ${
+          activeHelperFilter === 'ALL'
+            ? 'bg-slate-800 text-white shadow-xs'
+            : 'bg-slate-100 text-slate-600'
+        }">
+          全部 (${helpers.length})
+        </button>
+      `;
+
+      helpers.forEach(h => {
+        const isActive = activeHelperFilter === h.id;
+        html += `
+          <button type="button" data-filter="${h.id}" class="helper-filter-btn shrink-0 flex items-center gap-1.5 pl-1 pr-2.5 py-0.5 rounded-full text-[11px] font-bold border transition ${
+            isActive ? 'ring-2 ring-pink-400 bg-pink-50 border-pink-300 text-slate-800' : 'bg-white border-slate-200 text-slate-700'
+          }">
+            <span class="w-5 h-5 rounded-full flex items-center justify-center text-white text-[10px]" style="background:${h.color}">
+              ${renderHelperIconHtml(h.icon)}
+            </span>
+            <span>${h.name}</span>
+          </button>
+        `;
+      });
+
+      bar.innerHTML = html;
+    }
+
+    function renderWeekdayHeader() {
+      const headerEl = document.getElementById('weekdayHeader');
+      const toggleLabel = document.getElementById('weekStartLabel');
+      toggleLabel.textContent = weekStartsOnMonday ? '週一開始' : '週日開始';
+
+      const daysMondayFirst = [
+        { label: '一', color: '' },
+        { label: '二', color: '' },
+        { label: '三', color: '' },
+        { label: '四', color: '' },
+        { label: '五', color: '' },
+        { label: '六', color: 'text-sky-500' },
+        { label: '日', color: 'text-rose-400' }
+      ];
+
+      const daysSundayFirst = [
+        { label: '日', color: 'text-rose-400' },
+        { label: '一', color: '' },
+        { label: '二', color: '' },
+        { label: '三', color: '' },
+        { label: '四', color: '' },
+        { label: '五', color: '' },
+        { label: '六', color: 'text-sky-500' }
+      ];
+
+      const list = weekStartsOnMonday ? daysMondayFirst : daysSundayFirst;
+      headerEl.innerHTML = list.map(d => `<div class="${d.color}">${d.label}</div>`).join('');
+    }
+
+    function getIconSizeClass(count) {
+      if (count <= 2) return 'chip-size-normal';
+      if (count <= 4) return 'chip-size-sm';
+      if (count <= 6) return 'chip-size-xs';
+      return 'chip-size-xxs';
+    }
+
+    function renderCalendar(monthSwipeDirection = null) {
+      renderWeekdayHeader();
+      const grid = document.getElementById('calendarGrid');
+      const monthLabel = document.getElementById('currentMonthLabel');
+      monthLabel.textContent = `${currentYear}年 ${currentMonth + 1}月`;
+
+      if (monthSwipeDirection === 'left' || monthSwipeDirection === 'right') {
+        grid.classList.remove('swipe-anim-left', 'swipe-anim-right');
+        void grid.offsetWidth;
+        grid.classList.add(monthSwipeDirection === 'left' ? 'swipe-anim-left' : 'swipe-anim-right');
+      }
+
+      const firstDayOfMonth = new Date(currentYear, currentMonth, 1).getDay();
+      const leadingEmptyCount = weekStartsOnMonday
+        ? (firstDayOfMonth + 6) % 7
+        : firstDayOfMonth;
+
+      const daysInMonth = new Date(currentYear, currentMonth + 1, 0).getDate();
+      const prevMonthDays = new Date(currentYear, currentMonth, 0).getDate();
+      const todayKey = formatDateKey(now.getFullYear(), now.getMonth(), now.getDate());
+
+      const cells = [];
+
+      for (let i = leadingEmptyCount - 1; i >= 0; i--) {
+        const d = prevMonthDays - i;
+        const m = currentMonth === 0 ? 11 : currentMonth - 1;
+        const y = currentMonth === 0 ? currentYear - 1 : currentYear;
+        cells.push({ dateStr: formatDateKey(y, m, d), dayNum: d, inMonth: false });
+      }
+
+      for (let d = 1; d <= daysInMonth; d++) {
+        cells.push({ dateStr: formatDateKey(currentYear, currentMonth, d), dayNum: d, inMonth: true });
+      }
+
+      const remaining = (7 - (cells.length % 7)) % 7;
+      for (let d = 1; d <= remaining; d++) {
+        const m = currentMonth === 11 ? 0 : currentMonth + 1;
+        const y = currentMonth === 11 ? currentYear + 1 : currentYear;
+        cells.push({ dateStr: formatDateKey(y, m, d), dayNum: d, inMonth: false });
+      }
+
+      grid.innerHTML = cells.map(cell => {
+        const dayEntries = getEntriesForDate(cell.dateStr);
+        const allDayEntriesUnfiltered = entries.filter(e => getSegmentsForDate(e, cell.dateStr).length > 0);
+        const cov = evaluateDayCoverage(cell.dateStr, allDayEntriesUnfiltered);
+
+        let statusDotClass = 'bg-slate-200';
+        if (cov.isFull24h) statusDotClass = 'bg-emerald-500';
+        else if (cov.coveredMinutes > 0) statusDotClass = 'bg-amber-400';
+
+        const isToday = cell.dateStr === todayKey;
+        const isSelected = cell.dateStr === selectedDateStr;
+
+        const [cy, cm, cd] = cell.dateStr.split('-').map(Number);
+        const dayOfWeek = new Date(cy, cm - 1, cd).getDay();
+        let numColor = 'text-slate-700';
+        if (isToday) numColor = 'text-pink-600 font-extrabold';
+        else if (dayOfWeek === 0) numColor = 'text-rose-500';
+        else if (dayOfWeek === 6) numColor = 'text-sky-600';
+
+        const chipSizeClass = getIconSizeClass(dayEntries.length);
+
+        const iconsHtml = dayEntries.map(entry => {
+          const h = getHelperById(entry.helperId);
+          return `
+            <span
+              class="helper-chip ${chipSizeClass}"
+              data-entry-id="${entry.id}"
+              title="${h.name} (${formatEntryRangeBadge(entry)})"
+              style="background:${h.color};"
+            >
+              ${renderHelperIconHtml(h.icon)}
+            </span>
+          `;
+        }).join('');
+
+        return `
+          <div class="day-cell ${!cell.inMonth ? 'other-month' : ''} ${isToday ? 'today' : ''} ${isSelected ? 'selected' : ''}" data-date="${cell.dateStr}">
+            <div class="flex items-center justify-between px-0.5 shrink-0">
+              <span class="text-[11px] font-bold leading-none ${numColor}">${cell.dayNum}</span>
+              <span class="w-1.5 h-1.5 rounded-full ${statusDotClass}"></span>
+            </div>
+
+            <div class="flex flex-wrap items-center justify-center content-center gap-0.5 my-auto overflow-hidden py-0.5">
+              ${iconsHtml}
+            </div>
+
+            <div class="w-full h-1 bg-slate-100 rounded-full overflow-hidden shrink-0">
+              <div class="h-full transition-all ${cov.isFull24h ? 'bg-emerald-500' : 'bg-amber-400'}" style="width: ${cov.percent}%"></div>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function renderGanttChart(swipeDirection = null) {
+      const ganttBody = document.getElementById('ganttBody');
+      const ganttDateTitle = document.getElementById('ganttDateTitle');
+      const ganttCoverageBadge = document.getElementById('ganttCoverageBadge');
+      const swipeArea = document.getElementById('ganttSwipeArea');
+
+      ganttDateTitle.textContent = formatDisplayDate(selectedDateStr);
+
+      if (swipeDirection === 'left' || swipeDirection === 'right
