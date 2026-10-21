@@ -3,14 +3,14 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-  <title>BB 照顧排班日曆 v1.4 (每秒雲端同步版)</title>
+  <title>BB 照顧排班日曆 v1.4</title>
   <!-- Tailwind CSS -->
   <script src="https://cdn.tailwindcss.com"></script>
   <!-- Font Awesome 6 Free -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
   <!-- Google Fonts: Noto Sans TC -->
   <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
-  <!-- Firebase SDK (v9/v10 Compat 版本) -->
+  <!-- Firebase SDK (Compat 版本) -->
   <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
   <script>
@@ -19,13 +19,6 @@
         extend: {
           fontFamily: {
             sans: ['"Noto Sans TC"', 'sans-serif'],
-          },
-          colors: {
-            baby: {
-              bg: '#FFF9F6',
-              pink: '#EC4899',
-              dark: '#1E293B'
-            }
           }
         }
       }
@@ -58,14 +51,12 @@
       overflow-x: hidden;
       transition: max-width 0.25s ease;
     }
-    /* 全螢幕展開模式 */
     .mobile-shell.expanded-fullscreen {
       max-width: 100% !important;
       width: 100vw !important;
       min-height: 100dvh !important;
       border-radius: 0 !important;
     }
-    /* 頂部公告跑馬燈動畫 */
     .announcement-marquee-wrap {
       overflow: hidden;
       white-space: nowrap;
@@ -91,7 +82,6 @@
       grid-template-columns: repeat(7, minmax(0, 1fr));
       gap: 4px;
     }
-    /* 固定日曆格子大小 */
     .day-cell {
       height: 72px;
       border-radius: 12px;
@@ -123,7 +113,6 @@
       opacity: 0.32;
       background: #F8FAFC;
     }
-    /* 自動縮小照顧者圖示 */
     .helper-chip {
       border-radius: 9999px;
       display: inline-flex;
@@ -140,7 +129,6 @@
     .chip-size-xs     { width: 14px; height: 14px; font-size: 7.5px; }
     .chip-size-xxs    { width: 11.5px; height: 11.5px; font-size: 6.5px; }
 
-    /* 甘特圖對齊與夜間背景樣式 */
     .gantt-row-grid {
       display: flex;
       align-items: center;
@@ -164,7 +152,6 @@
       overflow: hidden;
       border: 1px solid #E2E8F0;
     }
-    /* 00:00-05:59 及 18:00-23:59 深藍色 50% 透明度夜間背景 */
     .gantt-night-zone {
       position: absolute;
       top: 0;
@@ -182,7 +169,6 @@
       pointer-events: none;
       z-index: 2;
     }
-    /* 甘特圖時間長條：強制單行顯示，支援自動縮字與跑馬燈 */
     .gantt-bar {
       position: absolute;
       top: 2px;
@@ -229,15 +215,9 @@
       animation: ganttMarquee 4.8s linear infinite;
     }
     @keyframes ganttMarquee {
-      0%, 18% {
-        transform: translateX(0%);
-      }
-      78%, 92% {
-        transform: translateX(var(--roll-offset, -45%));
-      }
-      100% {
-        transform: translateX(0%);
-      }
+      0%, 18% { transform: translateX(0%); }
+      78%, 92% { transform: translateX(var(--roll-offset, -45%)); }
+      100% { transform: translateX(0%); }
     }
 
     @keyframes slideLeftAnim {
@@ -248,23 +228,16 @@
       0% { opacity: 0.35; transform: translateX(-18px); }
       100% { opacity: 1; transform: translateX(0); }
     }
-    .swipe-anim-left {
-      animation: slideLeftAnim 0.22s ease-out;
-    }
-    .swipe-anim-right {
-      animation: slideRightAnim 0.22s ease-out;
-    }
+    .swipe-anim-left { animation: slideLeftAnim 0.22s ease-out; }
+    .swipe-anim-right { animation: slideRightAnim 0.22s ease-out; }
+
     @keyframes pinShake {
       0%, 100% { transform: translateX(0); }
       20%, 60% { transform: translateX(-10px); }
       40%, 80% { transform: translateX(10px); }
     }
-    .pin-shake {
-      animation: pinShake 0.35s ease-in-out;
-    }
-    .no-scrollbar::-webkit-scrollbar {
-      display: none;
-    }
+    .pin-shake { animation: pinShake 0.35s ease-in-out; }
+    .no-scrollbar::-webkit-scrollbar { display: none; }
   </style>
 </head>
 <body>
@@ -279,7 +252,6 @@
         <h2 class="text-xl font-extrabold tracking-tight">BB 照顧排班日曆</h2>
         <p class="text-xs text-slate-300 mt-1 text-center">首次使用安全驗證 · 請輸入 4 位數家庭密碼</p>
 
-        <!-- 4 個密碼圓點指示器 -->
         <div id="pinDotsContainer" class="flex items-center gap-4 my-7">
           <div class="pin-dot w-4 h-4 rounded-full border-2 border-pink-400 transition-all duration-150"></div>
           <div class="pin-dot w-4 h-4 rounded-full border-2 border-pink-400 transition-all duration-150"></div>
@@ -292,7 +264,6 @@
         </p>
       </div>
 
-      <!-- 數字鍵盤 -->
       <div class="w-full max-w-[280px] grid grid-cols-3 gap-3.5 my-auto">
         <button type="button" data-pin-key="1" class="pin-key h-14 rounded-2xl bg-white/10 hover:bg-white/15 active:scale-95 text-xl font-bold transition flex items-center justify-center">1</button>
         <button type="button" data-pin-key="2" class="pin-key h-14 rounded-2xl bg-white/10 hover:bg-white/15 active:scale-95 text-xl font-bold transition flex items-center justify-center">2</button>
@@ -325,16 +296,16 @@
           <div class="min-w-0">
             <div class="flex items-center gap-1">
               <h1 class="text-sm font-extrabold text-slate-800 tracking-tight leading-tight truncate">BB 照顧排班日曆</h1>
-              <span id="cloudSyncBadge" class="inline-flex items-center gap-1 text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-amber-50 text-amber-600 border border-amber-200 shrink-0 cursor-pointer" title="點擊立即強制同步雲端">
-                <span id="cloudSyncDot" class="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse"></span>
-                <span id="cloudSyncText">連線中</span>
+              <span class="text-[9px] font-bold px-1 py-0.5 rounded bg-pink-100 text-pink-600 shrink-0">v1.4</span>
+              <span id="cloudSyncBadge" class="inline-flex items-center gap-1 text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-slate-100 text-slate-500 border border-slate-200 shrink-0">
+                <span id="cloudSyncDot" class="w-1.5 h-1.5 rounded-full bg-slate-400"></span>
+                <span id="cloudSyncText">本機快取</span>
               </span>
             </div>
-            <p class="text-[10px] text-slate-500 font-medium truncate">每秒自動跨裝置同步 · 長按圖示可編輯/刪除</p>
+            <p class="text-[10px] text-slate-500 font-medium truncate">長按圖示可編輯或刪除排班</p>
           </div>
         </div>
 
-        <!-- 頂部功能按鈕：全螢幕切換、鎖定畫面、照顧者設定 -->
         <div class="flex items-center gap-1.5 shrink-0">
           <button id="fullscreenBtn" type="button" title="切換全螢幕顯示" class="w-7 h-7 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-600 flex items-center justify-center text-xs transition active:scale-95">
             <i id="fullscreenIcon" class="fa-solid fa-expand"></i>
@@ -344,20 +315,12 @@
           </button>
           <button id="openHelperModalBtn" type="button" class="flex items-center gap-1 px-2.5 py-1.5 rounded-full bg-pink-50 hover:bg-pink-100 text-pink-600 text-xs font-bold border border-pink-200 transition active:scale-95">
             <i class="fa-solid fa-users-gear"></i>
-            <span>照顧者設定</span>
+            <span>照顧者</span>
           </button>
         </div>
       </div>
 
-      <!-- 若 Firebase Firestore 權限未開時的提示列 -->
-      <div id="cloudErrorBanner" class="hidden mt-2 bg-rose-50 border border-rose-200 rounded-xl px-2.5 py-1.5 text-[10px] text-rose-700 font-medium">
-        <div class="flex items-center justify-between">
-          <span><i class="fa-solid fa-triangle-exclamation mr-1"></i>雲端資料庫權限未開啟，目前僅存於本機瀏覽器！</span>
-          <button id="showFirebaseRuleHelpBtn" type="button" class="underline font-bold ml-2 shrink-0">查看解決方法</button>
-        </div>
-      </div>
-
-      <!-- 頂部滾動公告欄 (可點擊手動輸入公告) -->
+      <!-- 頂部滾動公告欄 -->
       <div id="announcementBar" class="mt-2 bg-gradient-to-r from-amber-50 via-orange-50/80 to-amber-50 border border-amber-200/80 rounded-xl px-2.5 py-1 flex items-center gap-2 cursor-pointer hover:border-amber-300 transition">
         <span class="flex items-center gap-1 text-[10px] font-extrabold text-amber-700 bg-amber-200/70 px-1.5 py-0.5 rounded-md shrink-0">
           <i class="fa-solid fa-bullhorn text-[10px] text-amber-600"></i>
@@ -448,7 +411,6 @@
           </div>
         </div>
 
-        <!-- 夜間標示說明與當日覆蓋率 -->
         <div class="flex items-center justify-between text-[10px] text-slate-500 mb-2 px-0.5 gap-2">
           <div class="flex items-center gap-1.5 min-w-0">
             <span class="inline-block w-3 h-2.5 rounded-sm shrink-0" style="background-color: rgba(30, 58, 138, 0.5);"></span>
@@ -458,7 +420,6 @@
         </div>
 
         <div id="ganttSwipeArea" class="bg-slate-50/70 rounded-xl p-2 border border-slate-200/80 touch-pan-y">
-          <!-- X 軸時間刻度標題列 (與下方長條圖 100% 寬度對齊) -->
           <div class="gantt-row-grid mb-1.5 pb-1 border-b border-slate-200">
             <div class="gantt-label-col text-[10px] font-bold text-slate-400">
               指定照顧者
@@ -471,8 +432,6 @@
               <span class="absolute right-0 translate-x-0">23:59</span>
             </div>
           </div>
-
-          <!-- Y 軸照顧者與時間條列表 -->
           <div id="ganttBody" class="space-y-1.5"></div>
         </div>
       </div>
@@ -527,7 +486,7 @@
             </span>
             <div>
               <h3 class="text-sm font-extrabold text-slate-800">編輯頂部滾動公告</h3>
-              <p class="text-[10px] text-slate-400">儲存後將透過雲端即時同步至所有家人手機</p>
+              <p class="text-[10px] text-slate-400">儲存後將同步至所有家人手機</p>
             </div>
           </div>
           <button id="closeAnnouncementModalBtn" type="button" class="w-7 h-7 rounded-full bg-slate-100 text-slate-500 flex items-center justify-center">
@@ -551,15 +510,15 @@
 
         <div class="flex items-center gap-2 pt-1">
           <button id="saveAnnouncementBtn" type="button" class="flex-1 py-2.5 rounded-xl bg-gradient-to-r from-amber-500 to-orange-500 text-white font-bold text-xs shadow-sm active:scale-98 transition">
-            儲存並同步公告
+            儲存並更新公告
           </button>
         </div>
       </div>
     </div>
 
-    <!-- 彈窗 1：新增 / 編輯排班 Modal (含自訂常用時段 Preset 功能) -->
+    <!-- 彈窗 1：新增 / 編輯排班 Modal -->
     <div id="shiftFormModal" class="fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-xs hidden items-end justify-center">
-      <div class="bg-white w-full max-w-[430px] rounded-t-3xl p-5 max-h-[92dvh] overflow-y-auto shadow-2xl">
+      <div class="bg-white w-full max-w-[430px] rounded-t-3xl p-5 max-h-[90dvh] overflow-y-auto shadow-2xl">
         <div class="flex items-center justify-between pb-3 border-b border-slate-100">
           <h3 id="shiftFormTitle" class="text-base font-extrabold text-slate-800">新增照顧排班</h3>
           <button id="closeShiftFormModalBtn" type="button" class="w-8 h-8 rounded-full bg-slate-100 text-slate-500 flex items-center justify-center">
@@ -567,19 +526,17 @@
           </button>
         </div>
 
-        <form id="addShiftForm" class="space-y-4 mt-3.5">
+        <form id="addShiftForm" class="space-y-4 mt-4">
           <input type="hidden" id="editingEntryId" value="" />
 
-          <!-- 1. 選擇照顧者 -->
           <div>
             <label class="block text-xs font-bold text-slate-700 mb-2">1. 選擇照顧者</label>
             <div id="helperRadioGrid" class="grid grid-cols-4 gap-2"></div>
           </div>
 
-          <!-- 2. 選擇更期分類 + 全日按鈕 -->
           <div>
             <div class="flex items-center justify-between mb-1.5">
-              <label class="block text-xs font-bold text-slate-700">2. 選擇更期分類</label>
+              <label class="block text-xs font-bold text-slate-700">2. 選擇更期分類 (點擊可快填時間)</label>
               <button type="button" id="fullDayQuickBtn" class="text-[11px] font-extrabold text-white bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600 px-3 py-1 rounded-full shadow-xs flex items-center gap-1 active:scale-95 transition">
                 <i class="fa-solid fa-clock-rotate-left text-[10px]"></i>
                 <span>全日 (00:00–23:59)</span>
@@ -604,68 +561,12 @@
             </div>
           </div>
 
-          <!-- 2.5 自訂常用時段 (Preset Customized Time Periods) 一鍵快填區 -->
-          <div class="bg-pink-50/60 p-3 rounded-2xl border border-pink-100 space-y-2.5">
-            <div class="flex items-center justify-between">
-              <div class="flex items-center gap-1.5">
-                <i class="fa-solid fa-bolt text-pink-500 text-xs"></i>
-                <span class="text-xs font-extrabold text-slate-700">自訂常用時段 (點擊一鍵快填)</span>
-              </div>
-              <button type="button" id="toggleNewPresetCreatorBtn" class="text-[11px] font-bold text-pink-600 hover:text-pink-700 bg-white px-2.5 py-0.5 rounded-full border border-pink-200 shadow-2xs transition">
-                + 新增自訂時段
-              </button>
-            </div>
-
-            <!-- 常用時段按鈕列表 -->
-            <div id="customPresetsGrid" class="flex flex-wrap gap-1.5"></div>
-
-            <!-- 新增自訂常用時段摺疊表單 -->
-            <div id="newPresetCreatorPanel" class="hidden bg-white p-2.5 rounded-xl border border-pink-200 space-y-2">
-              <div class="flex items-center justify-between">
-                <span class="text-[11px] font-extrabold text-slate-700">建立新的常用時段預設</span>
-                <button type="button" id="closePresetCreatorBtn" class="text-[10px] text-slate-400 hover:text-slate-600">收起</button>
-              </div>
-              <div class="grid grid-cols-2 gap-2">
-                <div>
-                  <label class="block text-[10px] font-bold text-slate-500 mb-0.5">時段名稱 (選填)</label>
-                  <input id="newPresetNameInput" type="text" placeholder="例：日間幫手 / 婆婆更" class="w-full rounded-lg border border-slate-200 px-2 py-1 text-xs font-bold text-slate-800" />
-                </div>
-                <div>
-                  <label class="block text-[10px] font-bold text-slate-500 mb-0.5">是否跨日</label>
-                  <select id="newPresetDayOffsetSelect" class="w-full rounded-lg border border-slate-200 px-2 py-1 text-xs font-bold text-slate-800 bg-white">
-                    <option value="0">當日結束</option>
-                    <option value="1">翌日結束 (+1日)</option>
-                  </select>
-                </div>
-              </div>
-              <div class="grid grid-cols-2 gap-2">
-                <div>
-                  <label class="block text-[10px] font-bold text-slate-500 mb-0.5">開始時間</label>
-                  <input id="newPresetStartInput" type="time" value="09:00" class="w-full rounded-lg border border-slate-200 px-2 py-1 text-xs font-bold text-slate-800" />
-                </div>
-                <div>
-                  <label class="block text-[10px] font-bold text-slate-500 mb-0.5">結束時間</label>
-                  <input id="newPresetEndInput" type="time" value="18:00" class="w-full rounded-lg border border-slate-200 px-2 py-1 text-xs font-bold text-slate-800" />
-                </div>
-              </div>
-              <button type="button" id="saveCustomPresetBtn" class="w-full py-1.5 rounded-lg bg-pink-500 hover:bg-pink-600 text-white font-bold text-xs transition">
-                儲存為常用時段按鈕
-              </button>
-            </div>
-          </div>
-
-          <!-- 3. 開始日期與時間 / 結束日期與時間 -->
           <div class="bg-slate-50 p-3 rounded-2xl border border-slate-200/80 space-y-3">
-            <div class="flex items-center justify-between gap-1">
+            <div class="flex items-center justify-between">
               <span class="text-xs font-bold text-slate-700">3. 設定開始與結束日期時間</span>
-              <div class="flex items-center gap-1.5">
-                <span id="overnightBadge" class="hidden text-[10px] font-bold bg-indigo-100 text-indigo-700 px-2 py-0.5 rounded-full">
-                  <i class="fa-solid fa-moon mr-1"></i>跨日排班
-                </span>
-                <button type="button" id="saveCurrentTimeAsPresetBtn" class="text-[10px] font-bold text-amber-700 bg-amber-100 hover:bg-amber-200 px-2 py-0.5 rounded-full transition flex items-center gap-1" title="將目前輸入的時間存為上方常用按鈕">
-                  <i class="fa-solid fa-star text-[9px] text-amber-500"></i>存為常用
-                </button>
-              </div>
+              <span id="overnightBadge" class="hidden text-[10px] font-bold bg-indigo-100 text-indigo-700 px-2 py-0.5 rounded-full">
+                <i class="fa-solid fa-moon mr-1"></i>跨日排班
+              </span>
             </div>
 
             <div class="grid grid-cols-2 gap-2.5">
@@ -690,12 +591,12 @@
               </div>
             </div>
             <p class="text-[10px] text-slate-400 leading-relaxed">
-              <i class="fa-solid fa-circle-info mr-1 text-pink-400"></i>點擊上方「自訂常用時段」可一鍵填入時間；或手動輸入時間後點「⭐ 存為常用」方便日後快速排班。
+              <i class="fa-solid fa-circle-info mr-1 text-pink-400"></i>如照顧者跨夜留宿（例如 21/10 19:00 至 22/10 11:00），請將結束日期設為 22/10，系統會自動在兩日同時顯示該照顧者圖示及甘特圖時段。
             </p>
           </div>
 
           <button type="submit" class="w-full py-3 rounded-xl bg-gradient-to-r from-pink-500 to-rose-500 text-white font-bold text-sm shadow-md shadow-pink-500/20 active:scale-99 transition">
-            儲存並同步排班
+            儲存排班
           </button>
         </form>
       </div>
@@ -744,7 +645,6 @@
           </button>
         </div>
 
-        <!-- 新增/編輯照顧者表單 -->
         <div id="helperEditorCard" class="hidden mt-3 bg-slate-50 rounded-2xl p-3.5 border border-slate-200 space-y-3">
           <div class="flex items-center justify-between">
             <h4 id="helperEditorTitle" class="text-xs font-extrabold text-slate-700">新增照顧者</h4>
@@ -760,7 +660,6 @@
             <div id="helperColorPicker" class="flex items-center gap-2 flex-wrap"></div>
           </div>
 
-          <!-- 自訂輸入任意 Emoji 欄位 -->
           <div class="bg-white p-2.5 rounded-xl border border-pink-200/80 flex items-center justify-between gap-2">
             <div class="min-w-0">
               <label class="block text-[11px] font-bold text-pink-600">自訂輸入喜愛 Emoji 圖示</label>
@@ -777,7 +676,7 @@
             <div id="helperIconPicker" class="space-y-2.5 max-h-56 overflow-y-auto pr-1"></div>
           </div>
           <button id="saveHelperBtn" type="button" class="w-full py-2 rounded-xl bg-pink-500 text-white font-bold text-xs shadow-sm">
-            儲存並同步照顧者資料
+            儲存照顧者資料
           </button>
         </div>
 
@@ -837,7 +736,6 @@
             document.getElementById('pinLockModal').classList.add('hidden');
             currentPinInput = '';
             updatePinDots();
-            pullLatestFromCloudNow();
           }, 150);
         } else {
           const dotsContainer = document.getElementById('pinDotsContainer');
@@ -896,7 +794,7 @@
     }
 
     /**************************************************************
-     * 1. 圖示庫、預設照顧者與預設常用時段
+     * 1. 圖示庫 (支援 Emoji + 人物角色 + 可愛動物) 與預設資料
      **************************************************************/
     const ICON_CATEGORIES = [
       {
@@ -988,26 +886,16 @@
       { id: 'h7', name: '工人', icon: 'fa-hands-holding-child',  color: '#F97316' }
     ];
 
-    const DEFAULT_TIME_PRESETS = [
-      { id: 'tp1', label: '日間全更', start: '08:00', end: '20:00', dayOffset: 0, shift: 'morning' },
-      { id: 'tp2', label: '通宵留宿', start: '20:00', end: '08:00', dayOffset: 1, shift: 'night' },
-      { id: 'tp3', label: '上午幫手', start: '09:00', end: '13:00', dayOffset: 0, shift: 'morning' },
-      { id: 'tp4', label: '下午幫手', start: '14:00', end: '19:00', dayOffset: 0, shift: 'afternoon' },
-      { id: 'tp5', label: '晚飯時段', start: '18:00', end: '22:00', dayOffset: 0, shift: 'night' }
-    ];
-
     const SHIFT_META = {
       morning:   { label: '早更', defaultStart: '06:00', defaultEnd: '11:59', badgeBg: '#FEF3C7', badgeText: '#B45309' },
       afternoon: { label: '午更', defaultStart: '12:00', defaultEnd: '17:59', badgeBg: '#FFEDD5', badgeText: '#C2410C' },
       night:     { label: '夜更', defaultStart: '18:00', defaultEnd: '05:59', badgeBg: '#E0E7FF', badgeText: '#4338CA' }
     };
 
-    const STORAGE_KEY_HELPERS      = 'bb_care_helpers_v6_cloud';
-    const STORAGE_KEY_ENTRIES      = 'bb_care_entries_v6_cloud';
-    const STORAGE_KEY_PRESETS      = 'bb_care_presets_v6_cloud';
-    const STORAGE_KEY_WEEKSTART    = 'bb_care_weekstart_v6_cloud';
-    const STORAGE_KEY_ANNOUNCEMENT = 'bb_care_announcement_v6_cloud';
-    const STORAGE_KEY_LAST_UPDATED = 'bb_care_last_updated_ms_v6';
+    const STORAGE_KEY_HELPERS      = 'bb_care_helpers_v5_safe';
+    const STORAGE_KEY_ENTRIES      = 'bb_care_entries_v5_safe';
+    const STORAGE_KEY_WEEKSTART    = 'bb_care_weekstart_v5_safe';
+    const STORAGE_KEY_ANNOUNCEMENT = 'bb_care_announcement_v1';
     const DEFAULT_ANNOUNCEMENT     = '🍼 歡迎使用 BB 照顧排班日曆！請各位家人及姐姐確認每日交接時間，辛苦晒大家！💕';
 
     const now = new Date();
@@ -1017,12 +905,9 @@
     let activeHelperFilter = 'ALL';
     let weekStartsOnMonday = loadWeekStartPref();
 
-    let helpers = loadHelpersFromLocal();
-    let entries = loadEntriesFromLocal();
-    let customTimePresets = loadPresetsFromLocal();
-    let announcementText = loadAnnouncementFromLocal();
-    let localLastUpdatedMillis = Number(localStorage.getItem(STORAGE_KEY_LAST_UPDATED) || 0);
-    let lastRenderedDataSignature = '';
+    let helpers = loadHelpers();
+    let entries = loadEntries();
+    let announcementText = loadAnnouncement();
 
     let selectedShiftPreset = 'morning';
     let activeActionEntryId = null;
@@ -1030,7 +915,7 @@
     let tempHelperIcon = '🐱';
 
     /**************************************************************
-     * 1.5 Firebase 雲端強效同步引擎 (防舊分頁覆蓋 + 每秒自動刷新)
+     * 1.5 Firebase 雲端即時同步設定 (防無窮迴圈保護版)
      **************************************************************/
     const firebaseConfig = {
       apiKey: "AIzaSyDKGV_ub5ZyH7Dz-5wJlo9uDYjjtOc7Adc",
@@ -1043,205 +928,33 @@
 
     let db = null;
     let calendarDocRef = null;
-    let isMutatingCloud = false;
-
-    function computeDataSignature(hArr, eArr, pArr, annStr) {
-      try {
-        return JSON.stringify({ h: hArr, e: eArr, p: pArr, a: annStr });
-      } catch (e) {
-        return String(Date.now());
-      }
-    }
+    let hasAttemptedInitialSeed = false;
+    let syncDebounceTimer = null;
 
     function updateCloudBadgeUI(status) {
       const badge = document.getElementById('cloudSyncBadge');
       const dot = document.getElementById('cloudSyncDot');
       const text = document.getElementById('cloudSyncText');
-      const errBanner = document.getElementById('cloudErrorBanner');
       if (!badge || !dot || !text) return;
 
       if (status === 'synced') {
-        badge.className = 'inline-flex items-center gap-1 text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-emerald-50 text-emerald-600 border border-emerald-200 shrink-0 cursor-pointer';
-        dot.className = 'w-1.5 h-1.5 rounded-full bg-emerald-500 animate-ping';
-        text.textContent = '每秒雲端同步';
-        if (errBanner) errBanner.classList.add('hidden');
+        badge.className = 'inline-flex items-center gap-1 text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-emerald-50 text-emerald-600 border border-emerald-200 shrink-0';
+        dot.className = 'w-1.5 h-1.5 rounded-full bg-emerald-500';
+        text.textContent = '雲端同步';
       } else if (status === 'syncing') {
-        badge.className = 'inline-flex items-center gap-1 text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-amber-50 text-amber-600 border border-amber-200 shrink-0 cursor-pointer';
+        badge.className = 'inline-flex items-center gap-1 text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-amber-50 text-amber-600 border border-amber-200 shrink-0';
         dot.className = 'w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse';
-        text.textContent = '同步中...';
-      } else if (status === 'permission_error') {
-        badge.className = 'inline-flex items-center gap-1 text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-rose-50 text-rose-600 border border-rose-200 shrink-0 cursor-pointer';
-        dot.className = 'w-1.5 h-1.5 rounded-full bg-rose-500';
-        text.textContent = '雲端權限未開';
-        if (errBanner) errBanner.classList.remove('hidden');
+        text.textContent = '同步中';
       } else {
-        badge.className = 'inline-flex items-center gap-1 text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-slate-100 text-slate-500 border border-slate-200 shrink-0 cursor-pointer';
+        badge.className = 'inline-flex items-center gap-1 text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-slate-100 text-slate-500 border border-slate-200 shrink-0';
         dot.className = 'w-1.5 h-1.5 rounded-full bg-slate-400';
-        text.textContent = '離線快取';
-      }
-    }
-
-    function applyCloudSnapshotData(data) {
-      if (!data || isMutatingCloud) return;
-
-      const remoteHelpers = (Array.isArray(data.helpers) && data.helpers.length > 0) ? data.helpers : helpers;
-      const remoteEntries = Array.isArray(data.entries)
-        ? data.entries.filter(e =>
-            e && e.id && e.helperId &&
-            isValidDateStr(e.startDate) &&
-            isValidDateStr(e.endDate) &&
-            e.startDate <= e.endDate &&
-            typeof e.start === 'string' &&
-            typeof e.end === 'string'
-          )
-        : entries;
-      const remotePresets = Array.isArray(data.customTimePresets) ? data.customTimePresets : customTimePresets;
-      const remoteAnn = (typeof data.announcementText === 'string' && data.announcementText.trim())
-        ? data.announcementText.trim()
-        : announcementText;
-
-      const newSig = computeDataSignature(remoteHelpers, remoteEntries, remotePresets, remoteAnn);
-      if (newSig === lastRenderedDataSignature) {
-        updateCloudBadgeUI('synced');
-        return;
-      }
-
-      helpers = remoteHelpers;
-      entries = remoteEntries;
-      customTimePresets = remotePresets;
-      announcementText = remoteAnn;
-      localLastUpdatedMillis = Number(data.lastUpdatedMillis || Date.now());
-      lastRenderedDataSignature = newSig;
-
-      saveAllStateToLocalCache();
-      refreshAllViews();
-
-      // 若視窗開啟中，同步更新清單但避免打斷輸入
-      const helperModal = document.getElementById('helperManagerModal');
-      if (helperModal && !helperModal.classList.contains('hidden')) {
-        renderHelperManagerList();
-      }
-      const shiftModal = document.getElementById('shiftFormModal');
-      if (shiftModal && !shiftModal.classList.contains('hidden')) {
-        renderCustomPresetsGrid();
-      }
-      updateCloudBadgeUI('synced');
-    }
-
-    function saveAllStateToLocalCache() {
-      try {
-        localStorage.setItem(STORAGE_KEY_HELPERS, JSON.stringify(helpers));
-        localStorage.setItem(STORAGE_KEY_ENTRIES, JSON.stringify(entries));
-        localStorage.setItem(STORAGE_KEY_PRESETS, JSON.stringify(customTimePresets));
-        localStorage.setItem(STORAGE_KEY_ANNOUNCEMENT, announcementText);
-        localStorage.setItem(STORAGE_KEY_LAST_UPDATED, String(localLastUpdatedMillis));
-      } catch (e) {}
-    }
-
-    /**
-     * 核心防覆蓋寫入函數：
-     * 每次修改（新增/編輯/刪除）前，必定先從雲端拉取最新一刻的資料，再套用本次變更！
-     * 徹底杜絕舊 Chrome 分頁把整個舊陣列覆蓋到雲端的問題。
-     */
-    async function commitCloudMutation(mutatorFn) {
-      isMutatingCloud = true;
-      updateCloudBadgeUI('syncing');
-
-      try {
-        if (calendarDocRef) {
-          let latestDoc = null;
-          try {
-            latestDoc = await calendarDocRef.get({ source: 'server' });
-          } catch (e) {
-            latestDoc = await calendarDocRef.get();
-          }
-
-          if (latestDoc && latestDoc.exists) {
-            const remote = latestDoc.data();
-            if (remote) {
-              if (Array.isArray(remote.helpers) && remote.helpers.length > 0) helpers = remote.helpers;
-              if (Array.isArray(remote.entries)) {
-                entries = remote.entries.filter(e =>
-                  e && e.id && e.helperId &&
-                  isValidDateStr(e.startDate) &&
-                  isValidDateStr(e.endDate)
-                );
-              }
-              if (Array.isArray(remote.customTimePresets)) customTimePresets = remote.customTimePresets;
-              if (typeof remote.announcementText === 'string' && remote.announcementText.trim()) {
-                announcementText = remote.announcementText.trim();
-              }
-            }
-          }
-        }
-      } catch (fetchErr) {
-        console.warn('讀取雲端最新狀態失敗，使用本機狀態套用變更:', fetchErr);
-      }
-
-      // 在最新資料基礎上執行本次修改
-      mutatorFn();
-
-      localLastUpdatedMillis = Date.now();
-      lastRenderedDataSignature = computeDataSignature(helpers, entries, customTimePresets, announcementText);
-      saveAllStateToLocalCache();
-      refreshAllViews();
-
-      if (!calendarDocRef) {
-        isMutatingCloud = false;
-        updateCloudBadgeUI('offline');
-        return;
-      }
-
-      try {
-        await calendarDocRef.set({
-          helpers: helpers,
-          entries: entries,
-          customTimePresets: customTimePresets,
-          announcementText: announcementText,
-          lastUpdatedMillis: localLastUpdatedMillis,
-          lastUpdated: firebase.firestore.FieldValue.serverTimestamp()
-        }, { merge: true });
-        isMutatingCloud = false;
-        updateCloudBadgeUI('synced');
-      } catch (writeErr) {
-        isMutatingCloud = false;
-        console.error('寫入雲端失敗:', writeErr);
-        if (writeErr && writeErr.code === 'permission-denied') {
-          updateCloudBadgeUI('permission_error');
-        } else {
-          updateCloudBadgeUI('offline');
-        }
-      }
-    }
-
-    /**
-     * 主動從雲端伺服器拉取最新資料 (每秒自動執行 + 切換分頁瞬間執行)
-     */
-    async function pullLatestFromCloudNow() {
-      if (!calendarDocRef || isMutatingCloud) return;
-      try {
-        let doc = null;
-        try {
-          doc = await calendarDocRef.get({ source: 'server' });
-        } catch (serverErr) {
-          doc = await calendarDocRef.get();
-        }
-        if (doc && doc.exists) {
-          applyCloudSnapshotData(doc.data());
-        } else if (doc && !doc.exists && !doc.metadata.fromCache) {
-          // 僅當伺服器端確認完全未建立過文件時，才進行首次初始化上傳
-          await commitCloudMutation(() => {});
-        }
-      } catch (err) {
-        if (err && err.code === 'permission-denied') {
-          updateCloudBadgeUI('permission_error');
-        }
+        text.textContent = '本機快取';
       }
     }
 
     function initFirebaseCloudSync() {
       try {
-        if (typeof firebase === 'undefined') {
+        if (typeof firebase === 'undefined' || !firebase.firestore) {
           updateCloudBadgeUI('offline');
           return;
         }
@@ -1251,46 +964,69 @@
         db = firebase.firestore();
         calendarDocRef = db.collection('family_care').doc('shared_calendar');
 
-        // 1. 即時雙向監聽 (onSnapshot)
         calendarDocRef.onSnapshot((doc) => {
-          if (doc.exists) {
-            applyCloudSnapshotData(doc.data());
-          } else if (!doc.metadata.fromCache) {
-            commitCloudMutation(() => {});
+          if (doc && doc.exists) {
+            const data = doc.data();
+            if (data) {
+              if (Array.isArray(data.helpers) && data.helpers.length > 0) {
+                helpers = data.helpers.filter(h => h && h.id && h.name && h.icon && h.color);
+                try { localStorage.setItem(STORAGE_KEY_HELPERS, JSON.stringify(helpers)); } catch (e) {}
+              }
+              if (Array.isArray(data.entries)) {
+                entries = data.entries.filter(e =>
+                  e && e.id && e.helperId &&
+                  isValidDateStr(e.startDate) &&
+                  isValidDateStr(e.endDate) &&
+                  e.startDate <= e.endDate &&
+                  typeof e.start === 'string' &&
+                  typeof e.end === 'string'
+                );
+                try { localStorage.setItem(STORAGE_KEY_ENTRIES, JSON.stringify(entries)); } catch (e) {}
+              }
+              if (typeof data.announcementText === 'string' && data.announcementText.trim()) {
+                announcementText = data.announcementText.trim();
+                try { localStorage.setItem(STORAGE_KEY_ANNOUNCEMENT, announcementText); } catch (e) {}
+              }
+              refreshAllViews();
+              const helperModal = document.getElementById('helperManagerModal');
+              if (helperModal && !helperModal.classList.contains('hidden')) {
+                renderHelperManagerList();
+              }
+            }
+            updateCloudBadgeUI('synced');
+          } else if (doc && !doc.metadata.fromCache && !hasAttemptedInitialSeed) {
+            // 僅在伺服器確認尚無初始文件、且本次連線尚未初始化過時執行一次，防止無窮迴圈
+            hasAttemptedInitialSeed = true;
+            syncToCloud();
           }
         }, (error) => {
-          console.error('Firebase 監聽錯誤:', error);
-          if (error && error.code === 'permission-denied') {
-            updateCloudBadgeUI('permission_error');
-          } else {
-            updateCloudBadgeUI('offline');
-          }
+          console.warn('Firebase 雲端連線受限，已自動使用本機快取模式:', error && error.message);
+          updateCloudBadgeUI('offline');
         });
-
-        // 2. 每秒 (1000ms) 自動向雲端拉取最新狀態，確保跨裝置/跨瀏覽器零延遲一致
-        setInterval(() => {
-          if (document.visibilityState === 'visible') {
-            pullLatestFromCloudNow();
-          }
-        }, 1000);
-
-        // 3. 當用戶切換回此瀏覽器分頁 (例如從其他瀏覽器切回 Chrome) 時，立即同步雲端最新資料
-        document.addEventListener('visibilitychange', () => {
-          if (document.visibilityState === 'visible') {
-            pullLatestFromCloudNow();
-          }
-        });
-        window.addEventListener('focus', () => {
-          pullLatestFromCloudNow();
-        });
-        window.addEventListener('pageshow', () => {
-          pullLatestFromCloudNow();
-        });
-
       } catch (err) {
-        console.error('Firebase 初始化失敗:', err);
+        console.warn('Firebase 初始化略過，使用本機快取模式:', err);
         updateCloudBadgeUI('offline');
       }
+    }
+
+    function syncToCloud() {
+      if (!calendarDocRef) return;
+      if (syncDebounceTimer) clearTimeout(syncDebounceTimer);
+      updateCloudBadgeUI('syncing');
+
+      syncDebounceTimer = setTimeout(() => {
+        calendarDocRef.set({
+          helpers: helpers,
+          entries: entries,
+          announcementText: announcementText,
+          updatedAtMs: Date.now()
+        }, { merge: true }).then(() => {
+          updateCloudBadgeUI('synced');
+        }).catch((err) => {
+          console.warn('雲端寫入未完成 (已安全儲存於本機):', err && err.message);
+          updateCloudBadgeUI('offline');
+        });
+      }, 250);
     }
 
     /**************************************************************
@@ -1341,7 +1077,7 @@
       return `${d}/${m}`;
     }
 
-    function loadAnnouncementFromLocal() {
+    function loadAnnouncement() {
       try {
         const saved = localStorage.getItem(STORAGE_KEY_ANNOUNCEMENT);
         return saved && saved.trim() ? saved.trim() : DEFAULT_ANNOUNCEMENT;
@@ -1350,9 +1086,18 @@
       }
     }
 
+    function saveAnnouncement(text) {
+      announcementText = (text && text.trim()) ? text.trim() : DEFAULT_ANNOUNCEMENT;
+      try {
+        localStorage.setItem(STORAGE_KEY_ANNOUNCEMENT, announcementText);
+      } catch (e) {}
+      renderAnnouncementBar();
+      syncToCloud();
+    }
+
     function renderAnnouncementBar() {
       const displayEl = document.getElementById('announcementTextDisplay');
-      if (displayEl) {
+      if (displayEl && displayEl.textContent !== announcementText) {
         displayEl.textContent = announcementText;
       }
     }
@@ -1366,7 +1111,7 @@
       }
     }
 
-    function loadHelpersFromLocal() {
+    function loadHelpers() {
       try {
         const raw = localStorage.getItem(STORAGE_KEY_HELPERS);
         if (raw) {
@@ -1379,27 +1124,20 @@
       return JSON.parse(JSON.stringify(DEFAULT_HELPERS));
     }
 
-    function loadPresetsFromLocal() {
+    function saveHelpers() {
       try {
-        const raw = localStorage.getItem(STORAGE_KEY_PRESETS);
+        localStorage.setItem(STORAGE_KEY_HELPERS, JSON.stringify(helpers));
+      } catch (e) {}
+      syncToCloud();
+    }
+
+    function loadEntries() {
+      try {
+        const raw = localStorage.getItem(STORAGE_KEY_ENTRIES);
         if (raw) {
           const parsed = JSON.parse(raw);
           if (Array.isArray(parsed)) {
-            return parsed;
-          }
-        }
-      } catch (e) {}
-      return JSON.parse(JSON.stringify(DEFAULT_TIME_PRESETS));
-    }
-
-    function loadEntriesFromLocal() {
-      try {
-        const raw = localStorage.getItem(STORAGE_KEY_ENTRIES);
-        if (raw !== null) {
-          const parsed = JSON.parse(raw);
-          if (Array.isArray(parsed)) {
-            // 保留用戶清空排班後的空陣列狀態，不會誤還原示範資料
-            return parsed.filter(e =>
+            const valid = parsed.filter(e =>
               e && e.id && e.helperId &&
               isValidDateStr(e.startDate) &&
               isValidDateStr(e.endDate) &&
@@ -1407,16 +1145,16 @@
               typeof e.start === 'string' &&
               typeof e.end === 'string'
             );
+            if (valid.length > 0) return valid;
           }
         }
       } catch (e) {}
 
-      // 首次使用且尚無任何紀錄時，提供初始示範資料
       const todayKey = formatDateKey(now.getFullYear(), now.getMonth(), now.getDate());
       const tmrKey = addDaysToDateStr(todayKey, 1);
       const day3Key = addDaysToDateStr(todayKey, 2);
 
-      return [
+      const seeded = [
         { id: 'e1', startDate: todayKey, endDate: todayKey, helperId: 'h7', shift: 'night',     start: '00:00', end: '06:00' },
         { id: 'e2', startDate: todayKey, endDate: todayKey, helperId: 'h1', shift: 'morning',   start: '06:00', end: '14:00' },
         { id: 'e3', startDate: todayKey, endDate: todayKey, helperId: 'h3', shift: 'afternoon', start: '12:00', end: '18:00' },
@@ -1424,6 +1162,17 @@
         { id: 'e5', startDate: tmrKey,   endDate: tmrKey,   helperId: 'h5', shift: 'afternoon', start: '12:00', end: '19:00' },
         { id: 'e6', startDate: tmrKey,   endDate: day3Key,  helperId: 'h7', shift: 'night',     start: '19:00', end: '11:00' }
       ];
+      try {
+        localStorage.setItem(STORAGE_KEY_ENTRIES, JSON.stringify(seeded));
+      } catch (e) {}
+      return seeded;
+    }
+
+    function saveEntries() {
+      try {
+        localStorage.setItem(STORAGE_KEY_ENTRIES, JSON.stringify(entries));
+      } catch (e) {}
+      syncToCloud();
     }
 
     function getHelperById(id) {
@@ -1435,13 +1184,6 @@
       const [hh, mm] = tStr.split(':').map(Number);
       if (isNaN(hh) || isNaN(mm)) return 0;
       return Math.max(0, Math.min(1439, hh * 60 + mm));
-    }
-
-    function inferShiftCategoryFromStartTime(startStr) {
-      const m = timeToMinutes(startStr);
-      if (m >= 360 && m < 720) return 'morning';
-      if (m >= 720 && m < 1080) return 'afternoon';
-      return 'night';
     }
 
     function getDaysDiff(startDateStr, endDateStr) {
@@ -1697,4 +1439,885 @@
 
       ganttDateTitle.textContent = formatDisplayDate(selectedDateStr);
 
-      if (swipeDirection === 'left' || swipeDirection === 'right
+      if (swipeDirection === 'left' || swipeDirection === 'right') {
+        swipeArea.classList.remove('swipe-anim-left', 'swipe-anim-right');
+        void swipeArea.offsetWidth;
+        swipeArea.classList.add(swipeDirection === 'left' ? 'swipe-anim-left' : 'swipe-anim-right');
+      }
+
+      const allDayEntriesUnfiltered = entries.filter(e => getSegmentsForDate(e, selectedDateStr).length > 0);
+      const cov = evaluateDayCoverage(selectedDateStr, allDayEntriesUnfiltered);
+
+      if (cov.isFull24h) {
+        ganttCoverageBadge.className = 'font-bold text-[10px] text-emerald-600 whitespace-nowrap shrink-0';
+        ganttCoverageBadge.innerHTML = `<i class="fa-solid fa-circle-check mr-0.5"></i>24小時全滿 (100%)`;
+      } else if (cov.coveredMinutes > 0) {
+        ganttCoverageBadge.className = 'font-bold text-[10px] text-amber-600 whitespace-nowrap shrink-0';
+        ganttCoverageBadge.innerHTML = `<i class="fa-solid fa-clock mr-0.5"></i>已覆蓋 ${cov.percent}%`;
+      } else {
+        ganttCoverageBadge.className = 'font-bold text-[10px] text-slate-400 whitespace-nowrap shrink-0';
+        ganttCoverageBadge.innerHTML = `未有排班 (0%)`;
+      }
+
+      const dayEntries = getEntriesForDate(selectedDateStr);
+      const designatedHelperIds = [];
+      dayEntries.forEach(e => {
+        if (!designatedHelperIds.includes(e.helperId)) {
+          designatedHelperIds.push(e.helperId);
+        }
+      });
+
+      if (designatedHelperIds.length === 0) {
+        ganttBody.innerHTML = `
+          <div class="text-center py-4 text-slate-400 text-xs">
+            當日暫無指定照顧者排班（左右滑動可切換日期）
+          </div>
+        `;
+        return;
+      }
+
+      const designatedHelpers = designatedHelperIds.map(id => getHelperById(id));
+
+      ganttBody.innerHTML = designatedHelpers.map(h => {
+        const helperDayEntries = dayEntries.filter(e => e.helperId === h.id);
+
+        const barsHtml = helperDayEntries.map(entry => {
+          const segs = getSegmentsForDate(entry, selectedDateStr);
+          return segs.map(([sMin, eMin]) => {
+            const leftPct = (sMin / 1440) * 100;
+            const widthPct = Math.max(2.5, ((eMin - sMin + 1) / 1440) * 100);
+
+            const sh = pad2(Math.floor(sMin / 60));
+            const sm = pad2(sMin % 60);
+            const eh = pad2(Math.floor(eMin / 60));
+            const em = pad2(eMin % 60);
+            const label = `${sh}:${sm}-${eh}:${em}`;
+
+            let textSizeClass = 'gantt-text-normal';
+            if (widthPct < 20) {
+              textSizeClass = 'gantt-text-tiny';
+            } else if (widthPct < 33) {
+              textSizeClass = 'gantt-text-compact';
+            }
+
+            return `
+              <div
+                class="gantt-bar"
+                data-entry-id="${entry.id}"
+                title="${h.name}: ${label} (長按可編輯/刪除)"
+                style="left: ${leftPct.toFixed(2)}%; width: ${widthPct.toFixed(2)}%; background-color: ${h.color};"
+              >
+                <span class="gantt-bar-text ${textSizeClass}">${label}</span>
+              </div>
+            `;
+          }).join('');
+        }).join('');
+
+        return `
+          <div class="gantt-row-grid py-0.5">
+            <div class="gantt-label-col flex items-center gap-1.5 overflow-hidden">
+              <span class="w-5 h-5 rounded-full flex items-center justify-center text-white text-[10px] shrink-0 shadow-2xs" style="background:${h.color}">
+                ${renderHelperIconHtml(h.icon)}
+              </span>
+              <span class="text-[11px] font-bold text-slate-700 truncate">${h.name}</span>
+            </div>
+
+            <div class="gantt-track-col">
+              <div class="gantt-track-bar">
+                <div class="gantt-night-zone" style="left: 0%; width: 25%;"></div>
+                <div class="gantt-night-zone" style="left: 75%; width: 25%;"></div>
+
+                <div class="gantt-grid-line" style="left: 25%;"></div>
+                <div class="gantt-grid-line" style="left: 50%;"></div>
+                <div class="gantt-grid-line" style="left: 75%;"></div>
+
+                ${barsHtml}
+              </div>
+            </div>
+          </div>
+        `;
+      }).join('');
+
+      requestAnimationFrame(() => {
+        const bars = ganttBody.querySelectorAll('.gantt-bar');
+        bars.forEach(bar => {
+          const textEl = bar.querySelector('.gantt-bar-text');
+          if (!textEl) return;
+          const barWidth = bar.clientWidth;
+          const textWidth = textEl.scrollWidth;
+          if (textWidth > barWidth - 3) {
+            const overflowPx = textWidth - barWidth + 14;
+            bar.style.setProperty('--roll-offset', `-${overflowPx}px`);
+            bar.classList.add('is-rolling');
+          }
+        });
+      });
+    }
+
+    function renderSelectedDateSummary() {
+      const titleEl = document.getElementById('selectedDateSummaryTitle');
+      const listEl = document.getElementById('selectedDateQuickList');
+      const todayKey = formatDateKey(now.getFullYear(), now.getMonth(), now.getDate());
+
+      titleEl.textContent = selectedDateStr === todayKey
+        ? `當日照顧安排 · 今日 (${formatDisplayDate(selectedDateStr)})`
+        : `當日照顧安排 · ${formatDisplayDate(selectedDateStr)}`;
+
+      const dayEntries = getEntriesForDate(selectedDateStr);
+      if (dayEntries.length === 0) {
+        listEl.innerHTML = `
+          <div class="text-center py-5 bg-slate-50 rounded-xl border border-dashed border-slate-200">
+            <i class="fa-regular fa-calendar-xmark text-slate-300 text-xl mb-1"></i>
+            <p class="text-xs text-slate-400 font-medium">此日期暫無照顧排班，點擊上方「+ 新增當日排班」安排人手</p>
+          </div>
+        `;
+        return;
+      }
+
+      listEl.innerHTML = dayEntries.map(entry => {
+        const h = getHelperById(entry.helperId);
+        const shiftInfo = SHIFT_META[entry.shift] || SHIFT_META.morning;
+        const rangeText = formatEntryRangeBadge(entry);
+        return `
+          <div class="flex items-center justify-between p-2.5 rounded-xl bg-slate-50/90 border border-slate-100">
+            <div class="flex items-center gap-2.5">
+              <div
+                class="w-9 h-9 rounded-xl flex items-center justify-center text-white text-sm shadow-xs cursor-pointer"
+                data-entry-id="${entry.id}"
+                style="background:${h.color}"
+                title="長按可編輯或刪除"
+              >
+                ${renderHelperIconHtml(h.icon)}
+              </div>
+              <div>
+                <div class="flex items-center gap-1.5 flex-wrap">
+                  <span class="text-xs font-extrabold text-slate-800">${h.name}</span>
+                  <span class="text-[10px] font-bold px-1.5 py-0.5 rounded-md" style="background:${shiftInfo.badgeBg}; color:${shiftInfo.badgeText}">
+                    ${shiftInfo.label}
+                  </span>
+                </div>
+                <p class="text-[11px] text-pink-600 font-bold mt-0.5">
+                  <i class="fa-regular fa-clock mr-1"></i>${rangeText}
+                </p>
+              </div>
+            </div>
+            <button type="button" class="open-entry-action-btn w-7 h-7 rounded-full hover:bg-slate-200/70 text-slate-400 flex items-center justify-center text-xs" data-entry-id="${entry.id}">
+              <i class="fa-solid fa-ellipsis-vertical"></i>
+            </button>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function refreshAllViews(swipeDirection = null) {
+      renderAnnouncementBar();
+      renderHelperLegend();
+      renderCalendar();
+      renderGanttChart(swipeDirection);
+      renderSelectedDateSummary();
+    }
+
+    /**************************************************************
+     * 4. 新增 / 編輯排班表單 Modal
+     **************************************************************/
+    function renderHelperRadioGrid(selectedHelperId) {
+      const container = document.getElementById('helperRadioGrid');
+      const chosen = selectedHelperId || (helpers[0] && helpers[0].id);
+      container.innerHTML = helpers.map(h => `
+        <label class="cursor-pointer">
+          <input type="radio" name="helperId" value="${h.id}" class="peer sr-only" ${h.id === chosen ? 'checked' : ''} />
+          <div class="p-2 rounded-xl border border-slate-200 bg-slate-50/60 peer-checked:border-pink-500 peer-checked:bg-pink-50/70 peer-checked:ring-2 peer-checked:ring-pink-200 flex flex-col items-center gap-1 transition">
+            <span class="w-8 h-8 rounded-full flex items-center justify-center text-white text-xs shadow-xs" style="background:${h.color}">
+              ${renderHelperIconHtml(h.icon)}
+            </span>
+            <span class="text-[11px] font-bold text-slate-700 truncate w-full text-center">${h.name}</span>
+          </div>
+        </label>
+      `).join('');
+    }
+
+    function updateOvernightBadge() {
+      const sDate = document.getElementById('shiftStartDateInput').value;
+      const eDate = document.getElementById('shiftEndDateInput').value;
+      const badge = document.getElementById('overnightBadge');
+      if (sDate && eDate && eDate > sDate) {
+        badge.classList.remove('hidden');
+      } else {
+        badge.classList.add('hidden');
+      }
+    }
+
+    function highlightShiftPresetButton(shiftKey, autofillTime = false) {
+      selectedShiftPreset = shiftKey;
+      document.querySelectorAll('.shift-preset-btn').forEach(btn => {
+        const key = btn.getAttribute('data-shift');
+        if (key === shiftKey) {
+          btn.classList.add('border-pink-500', 'bg-pink-50', 'text-pink-700');
+          btn.classList.remove('border-slate-200', 'bg-white', 'text-slate-700');
+        } else {
+          btn.classList.remove('border-pink-500', 'bg-pink-50', 'text-pink-700');
+          btn.classList.add('border-slate-200', 'bg-white', 'text-slate-700');
+        }
+      });
+
+      if (autofillTime && SHIFT_META[shiftKey]) {
+        const sDate = document.getElementById('shiftStartDateInput').value || selectedDateStr;
+        document.getElementById('shiftStartInput').value = SHIFT_META[shiftKey].defaultStart;
+        document.getElementById('shiftEndInput').value = SHIFT_META[shiftKey].defaultEnd;
+        if (shiftKey === 'night') {
+          document.getElementById('shiftEndDateInput').value = addDaysToDateStr(sDate, 1);
+        } else {
+          document.getElementById('shiftEndDateInput').value = sDate;
+        }
+        updateOvernightBadge();
+      }
+    }
+
+    function openShiftFormModal({ dateStr, entryId = null }) {
+      const formModal = document.getElementById('shiftFormModal');
+      const titleEl = document.getElementById('shiftFormTitle');
+      const editingInput = document.getElementById('editingEntryId');
+      const startDateInput = document.getElementById('shiftStartDateInput');
+      const endDateInput = document.getElementById('shiftEndDateInput');
+      const startInput = document.getElementById('shiftStartInput');
+      const endInput = document.getElementById('shiftEndInput');
+
+      if (entryId) {
+        const entry = entries.find(e => e.id === entryId);
+        if (!entry) return;
+        titleEl.textContent = '編輯照顧排班';
+        editingInput.value = entry.id;
+        startDateInput.value = entry.startDate;
+        endDateInput.value = entry.endDate;
+        renderHelperRadioGrid(entry.helperId);
+        highlightShiftPresetButton(entry.shift || 'morning', false);
+        startInput.value = entry.start;
+        endInput.value = entry.end;
+      } else {
+        const initDate = isValidDateStr(dateStr) ? dateStr : selectedDateStr;
+        titleEl.textContent = '新增照顧排班';
+        editingInput.value = '';
+        startDateInput.value = initDate;
+        endDateInput.value = initDate;
+        renderHelperRadioGrid(helpers[0] ? helpers[0].id : '');
+        highlightShiftPresetButton('morning', true);
+      }
+
+      updateOvernightBadge();
+      formModal.classList.remove('hidden');
+      formModal.classList.add('flex');
+    }
+
+    function closeShiftFormModal() {
+      const formModal = document.getElementById('shiftFormModal');
+      formModal.classList.add('hidden');
+      formModal.classList.remove('flex');
+    }
+
+    /**************************************************************
+     * 5. 長按圖示選單 (編輯 / 刪除)
+     **************************************************************/
+    function openActionMenuForEntry(entryId) {
+      const entry = entries.find(e => e.id === entryId);
+      if (!entry) return;
+      activeActionEntryId = entryId;
+      const h = getHelperById(entry.helperId);
+      const shiftInfo = SHIFT_META[entry.shift] || SHIFT_META.morning;
+
+      const badge = document.getElementById('actionMenuHelperBadge');
+      badge.style.background = h.color;
+      badge.innerHTML = renderHelperIconHtml(h.icon);
+
+      document.getElementById('actionMenuTitle').textContent = `${h.name} · ${shiftInfo.label}`;
+      document.getElementById('actionMenuSubtitle').textContent =
+        `${formatDisplayDate(entry.startDate)} ${entry.start} 至 ${formatDisplayDate(entry.endDate)} ${entry.end}`;
+
+      const modal = document.getElementById('longPressActionModal');
+      modal.classList.remove('hidden');
+      modal.classList.add('flex');
+    }
+
+    function closeActionMenu() {
+      activeActionEntryId = null;
+      const modal = document.getElementById('longPressActionModal');
+      modal.classList.add('hidden');
+      modal.classList.remove('flex');
+    }
+
+    /**************************************************************
+     * 6. 照顧者設定 Modal (支援 Emoji + 人物 + 動物圖示)
+     **************************************************************/
+    function updateHelperIconPreviewBadge() {
+      const preview = document.getElementById('currentIconPreviewBadge');
+      if (!preview) return;
+      preview.style.background = tempHelperColor;
+      preview.innerHTML = renderHelperIconHtml(tempHelperIcon);
+    }
+
+    function renderHelperEditorPickers() {
+      const colorContainer = document.getElementById('helperColorPicker');
+      colorContainer.innerHTML = HELPER_COLORS.map(c => `
+        <button type="button" data-color="${c}" class="helper-color-btn w-6 h-6 rounded-full transition ${
+          tempHelperColor === c ? 'ring-2 ring-offset-2 ring-slate-700 scale-110' : 'opacity-80'
+        }" style="background:${c}"></button>
+      `).join('');
+
+      const iconContainer = document.getElementById('helperIconPicker');
+      iconContainer.innerHTML = ICON_CATEGORIES.map(cat => `
+        <div>
+          <div class="text-[10px] font-bold text-slate-400 mb-1">${cat.category}</div>
+          <div class="grid grid-cols-4 gap-1.5">
+            ${cat.icons.map(item => `
+              <button type="button" data-icon="${item.icon}" class="helper-icon-btn py-1.5 px-1 rounded-xl border flex flex-col items-center justify-center gap-0.5 transition ${
+                tempHelperIcon === item.icon
+                  ? 'border-pink-500 bg-pink-50 text-pink-600 ring-2 ring-pink-200'
+                  : 'border-slate-200 bg-white text-slate-600'
+              }">
+                <span class="text-sm leading-none">${renderHelperIconHtml(item.icon)}</span>
+                <span class="text-[9px] font-medium truncate w-full text-center mt-0.5">${item.label}</span>
+              </button>
+            `).join('')}
+          </div>
+        </div>
+      `).join('');
+
+      const customEmojiInput = document.getElementById('customEmojiInput');
+      if (customEmojiInput) {
+        const iconStr = String(tempHelperIcon || '');
+        customEmojiInput.value = iconStr.startsWith('fa-') ? '' : iconStr;
+      }
+      updateHelperIconPreviewBadge();
+    }
+
+    function openHelperEditor(helperObj = null) {
+      const card = document.getElementById('helperEditorCard');
+      const title = document.getElementById('helperEditorTitle');
+      const idInput = document.getElementById('editingHelperId');
+      const nameInput = document.getElementById('helperNameInput');
+
+      if (helperObj) {
+        title.textContent = `編輯照顧者：${helperObj.name}`;
+        idInput.value = helperObj.id;
+        nameInput.value = helperObj.name;
+        tempHelperColor = helperObj.color;
+        tempHelperIcon = helperObj.icon;
+      } else {
+        title.textContent = '新增照顧者';
+        idInput.value = '';
+        nameInput.value = '';
+        tempHelperColor = HELPER_COLORS[helpers.length % HELPER_COLORS.length];
+        tempHelperIcon = '🐱';
+      }
+
+      renderHelperEditorPickers();
+      card.classList.remove('hidden');
+    }
+
+    function renderHelperManagerList() {
+      const list = document.getElementById('helperManagerList');
+      list.innerHTML = helpers.map((h, idx) => {
+        const iconStr = String(h.icon || '');
+        return `
+          <div class="p-3 rounded-2xl bg-slate-50 border border-slate-200/80 flex items-center justify-between">
+            <div class="flex items-center gap-2.5">
+              <span class="text-[11px] font-bold text-slate-400 w-4">${idx + 1}.</span>
+              <div class="w-9 h-9 rounded-xl flex items-center justify-center text-white text-sm shadow-xs" style="background:${h.color}">
+                ${renderHelperIconHtml(iconStr)}
+              </div>
+              <div>
+                <div class="text-xs font-extrabold text-slate-800">${h.name}</div>
+                <div class="text-[10px] text-slate-400">${iconStr.startsWith('fa-') ? '經典圖示' : 'Emoji 圖示'}</div>
+              </div>
+            </div>
+            <div class="flex items-center gap-1.5">
+              <button type="button" data-edit-helper="${h.id}" class="px-2.5 py-1 rounded-lg bg-white border border-slate-200 text-slate-600 text-[11px] font-bold hover:bg-slate-100">
+                編輯
+              </button>
+              <button type="button" data-delete-helper="${h.id}" class="px-2.5 py-1 rounded-lg bg-rose-50 border border-rose-200 text-rose-600 text-[11px] font-bold hover:bg-rose-100">
+                刪除
+              </button>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function openHelperManagerModal() {
+      document.getElementById('helperEditorCard').classList.add('hidden');
+      renderHelperManagerList();
+      const modal = document.getElementById('helperManagerModal');
+      modal.classList.remove('hidden');
+      modal.classList.add('flex');
+    }
+
+    function closeHelperManagerModal() {
+      const modal = document.getElementById('helperManagerModal');
+      modal.classList.add('hidden');
+      modal.classList.remove('flex');
+    }
+
+    /**************************************************************
+     * 7. 月份切換、甘特圖日期切換、全螢幕與公告彈窗控制
+     **************************************************************/
+    function changeMonthByDelta(deltaMonths, swipeDirection = null) {
+      currentMonth += deltaMonths;
+      if (currentMonth < 0) {
+        currentMonth = 11;
+        currentYear--;
+      } else if (currentMonth > 11) {
+        currentMonth = 0;
+        currentYear++;
+      }
+      renderCalendar(swipeDirection);
+    }
+
+    function shiftSelectedDateByDays(deltaDays) {
+      const nextDateStr = addDaysToDateStr(selectedDateStr, deltaDays);
+      selectedDateStr = nextDateStr;
+      const [y, m] = nextDateStr.split('-').map(Number);
+      currentYear = y;
+      currentMonth = m - 1;
+      const direction = deltaDays > 0 ? 'left' : 'right';
+      refreshAllViews(direction);
+    }
+
+    function toggleFullScreenMode() {
+      const appShell = document.getElementById('appShell');
+      const bottomNav = document.getElementById('bottomNavBar');
+      const iconEl = document.getElementById('fullscreenIcon');
+
+      const doc = window.document;
+      const docEl = doc.documentElement;
+      const requestFullScreen = docEl.requestFullscreen || docEl.webkitRequestFullScreen || docEl.mozRequestFullScreen || docEl.msRequestFullscreen;
+      const exitFullScreen = doc.exitFullscreen || doc.webkitExitFullscreen || doc.mozCancelFullScreen || doc.msExitFullscreen;
+      const isNativeFull = doc.fullscreenElement || doc.webkitFullscreenElement || doc.mozFullScreenElement || doc.msFullscreenElement;
+
+      const isCurrentlyExpanded = appShell.classList.contains('expanded-fullscreen') || Boolean(isNativeFull);
+
+      if (!isCurrentlyExpanded) {
+        appShell.classList.add('expanded-fullscreen');
+        bottomNav.classList.remove('max-w-[430px]');
+        iconEl.classList.remove('fa-expand');
+        iconEl.classList.add('fa-compress');
+        if (requestFullScreen) {
+          try { requestFullScreen.call(docEl); } catch (e) {}
+        }
+      } else {
+        appShell.classList.remove('expanded-fullscreen');
+        bottomNav.classList.add('max-w-[430px]');
+        iconEl.classList.remove('fa-compress');
+        iconEl.classList.add('fa-expand');
+        if (isNativeFull && exitFullScreen) {
+          try { exitFullScreen.call(doc); } catch (e) {}
+        }
+      }
+      setTimeout(() => renderGanttChart(), 260);
+    }
+
+    function openAnnouncementModal() {
+      const modal = document.getElementById('announcementModal');
+      const input = document.getElementById('announcementInput');
+      input.value = announcementText;
+      modal.classList.remove('hidden');
+      modal.classList.add('flex');
+    }
+
+    function closeAnnouncementModal() {
+      const modal = document.getElementById('announcementModal');
+      modal.classList.add('hidden');
+      modal.classList.remove('flex');
+    }
+
+    /**************************************************************
+     * 8. 單次全域事件委派綁定
+     **************************************************************/
+    function bindGlobalEvents() {
+      let pressTimer = null;
+      let longPressTriggered = false;
+
+      const appShell = document.getElementById('appShell');
+
+      const clearPressTimer = () => {
+        if (pressTimer) {
+          clearTimeout(pressTimer);
+          pressTimer = null;
+        }
+      };
+
+      document.getElementById('fullscreenBtn').addEventListener('click', toggleFullScreenMode);
+
+      document.getElementById('announcementBar').addEventListener('click', openAnnouncementModal);
+      document.getElementById('navAnnouncementBtn').addEventListener('click', openAnnouncementModal);
+      document.getElementById('closeAnnouncementModalBtn').addEventListener('click', closeAnnouncementModal);
+      document.getElementById('saveAnnouncementBtn').addEventListener('click', () => {
+        const val = document.getElementById('announcementInput').value;
+        saveAnnouncement(val);
+        closeAnnouncementModal();
+      });
+      document.querySelectorAll('.announcement-tpl-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          document.getElementById('announcementInput').value = btn.getAttribute('data-template');
+        });
+      });
+
+      appShell.addEventListener('pointerdown', (e) => {
+        const entryChip = e.target.closest('[data-entry-id]');
+        if (!entryChip) return;
+        const entryId = entryChip.getAttribute('data-entry-id');
+        longPressTriggered = false;
+        clearPressTimer();
+        pressTimer = setTimeout(() => {
+          longPressTriggered = true;
+          if (navigator.vibrate) navigator.vibrate(35);
+          openActionMenuForEntry(entryId);
+        }, 500);
+      });
+
+      appShell.addEventListener('pointerup', clearPressTimer);
+      appShell.addEventListener('pointerleave', clearPressTimer);
+      appShell.addEventListener('pointercancel', clearPressTimer);
+      appShell.addEventListener('contextmenu', (e) => {
+        if (e.target.closest('[data-entry-id]')) e.preventDefault();
+      });
+
+      document.getElementById('calendarGrid').addEventListener('click', (e) => {
+        if (longPressTriggered) {
+          longPressTriggered = false;
+          return;
+        }
+        const cell = e.target.closest('.day-cell');
+        if (!cell) return;
+        const dateStr = cell.getAttribute('data-date');
+        if (!isValidDateStr(dateStr)) return;
+        selectedDateStr = dateStr;
+        const [y, m] = dateStr.split('-').map(Number);
+        currentYear = y;
+        currentMonth = m - 1;
+        refreshAllViews();
+      });
+
+      const calendarSwipeContainer = document.getElementById('calendarSwipeContainer');
+      let calTouchStartX = 0;
+      let calTouchStartY = 0;
+
+      calendarSwipeContainer.addEventListener('touchstart', (e) => {
+        if (!e.touches || e.touches.length === 0) return;
+        calTouchStartX = e.touches[0].clientX;
+        calTouchStartY = e.touches[0].clientY;
+      }, { passive: true });
+
+      calendarSwipeContainer.addEventListener('touchend', (e) => {
+        if (!e.changedTouches || e.changedTouches.length === 0) return;
+        const dx = e.changedTouches[0].clientX - calTouchStartX;
+        const dy = e.changedTouches[0].clientY - calTouchStartY;
+        if (Math.abs(dx) > 45 && Math.abs(dx) > Math.abs(dy) * 1.3) {
+          clearPressTimer();
+          if (dx < 0) {
+            changeMonthByDelta(1, 'left');
+          } else {
+            changeMonthByDelta(-1, 'right');
+          }
+        }
+      }, { passive: true });
+
+      document.getElementById('helperLegendBar').addEventListener('click', (e) => {
+        const btn = e.target.closest('.helper-filter-btn');
+        if (!btn) return;
+        activeHelperFilter = btn.getAttribute('data-filter');
+        refreshAllViews();
+      });
+
+      document.getElementById('selectedDateQuickList').addEventListener('click', (e) => {
+        const btn = e.target.closest('.open-entry-action-btn');
+        if (!btn) return;
+        e.stopPropagation();
+        openActionMenuForEntry(btn.getAttribute('data-entry-id'));
+      });
+
+      document.getElementById('ganttPrevDayBtn').addEventListener('click', () => shiftSelectedDateByDays(-1));
+      document.getElementById('ganttNextDayBtn').addEventListener('click', () => shiftSelectedDateByDays(1));
+
+      const ganttSwipeArea = document.getElementById('ganttSwipeArea');
+      let touchStartX = 0;
+      let touchStartY = 0;
+
+      ganttSwipeArea.addEventListener('touchstart', (e) => {
+        if (!e.touches || e.touches.length === 0) return;
+        touchStartX = e.touches[0].clientX;
+        touchStartY = e.touches[0].clientY;
+      }, { passive: true });
+
+      ganttSwipeArea.addEventListener('touchend', (e) => {
+        if (!e.changedTouches || e.changedTouches.length === 0) return;
+        const dx = e.changedTouches[0].clientX - touchStartX;
+        const dy = e.changedTouches[0].clientY - touchStartY;
+        if (Math.abs(dx) > 42 && Math.abs(dx) > Math.abs(dy) * 1.3) {
+          clearPressTimer();
+          if (dx < 0) {
+            shiftSelectedDateByDays(1);
+          } else {
+            shiftSelectedDateByDays(-1);
+          }
+        }
+      }, { passive: true });
+
+      document.getElementById('prevMonthBtn').addEventListener('click', () => changeMonthByDelta(-1, 'right'));
+      document.getElementById('nextMonthBtn').addEventListener('click', () => changeMonthByDelta(1, 'left'));
+
+      document.getElementById('toggleWeekStartBtn').addEventListener('click', () => {
+        weekStartsOnMonday = !weekStartsOnMonday;
+        try {
+          localStorage.setItem(STORAGE_KEY_WEEKSTART, weekStartsOnMonday ? 'monday' : 'sunday');
+        } catch (e) {}
+        renderCalendar();
+      });
+
+      document.getElementById('todayBtn').addEventListener('click', () => {
+        const t = new Date();
+        currentYear = t.getFullYear();
+        currentMonth = t.getMonth();
+        selectedDateStr = formatDateKey(currentYear, currentMonth, t.getDate());
+        refreshAllViews();
+      });
+
+      document.getElementById('quickAddSelectedDateBtn').addEventListener('click', () => {
+        openShiftFormModal({ dateStr: selectedDateStr });
+      });
+      document.getElementById('fabAddShiftBtn').addEventListener('click', () => {
+        openShiftFormModal({ dateStr: selectedDateStr });
+      });
+      document.getElementById('navAddShiftBtn').addEventListener('click', () => {
+        openShiftFormModal({ dateStr: selectedDateStr });
+      });
+      document.getElementById('closeShiftFormModalBtn').addEventListener('click', closeShiftFormModal);
+
+      document.querySelectorAll('.shift-preset-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          highlightShiftPresetButton(btn.getAttribute('data-shift'), true);
+        });
+      });
+
+      document.getElementById('fullDayQuickBtn').addEventListener('click', () => {
+        const sDate = document.getElementById('shiftStartDateInput').value || selectedDateStr;
+        document.getElementById('shiftStartDateInput').value = sDate;
+        document.getElementById('shiftEndDateInput').value = sDate;
+        document.getElementById('shiftStartInput').value = '00:00';
+        document.getElementById('shiftEndInput').value = '23:59';
+        highlightShiftPresetButton('morning', false);
+        updateOvernightBadge();
+      });
+
+      document.getElementById('shiftStartDateInput').addEventListener('change', (e) => {
+        const sDate = e.target.value;
+        const eDateInput = document.getElementById('shiftEndDateInput');
+        if (eDateInput.value < sDate) {
+          eDateInput.value = sDate;
+        }
+        updateOvernightBadge();
+      });
+
+      document.getElementById('shiftEndDateInput').addEventListener('change', updateOvernightBadge);
+
+      document.getElementById('shiftStartInput').addEventListener('change', () => {
+        const sTime = document.getElementById('shiftStartInput').value;
+        const eTime = document.getElementById('shiftEndInput').value;
+        const sDate = document.getElementById('shiftStartDateInput').value;
+        const eDate = document.getElementById('shiftEndDateInput').value;
+        if (sDate && eDate && sDate === eDate && eTime < sTime) {
+          document.getElementById('shiftEndDateInput').value = addDaysToDateStr(sDate, 1);
+          updateOvernightBadge();
+        }
+      });
+
+      document.getElementById('shiftEndInput').addEventListener('change', () => {
+        const sTime = document.getElementById('shiftStartInput').value;
+        const eTime = document.getElementById('shiftEndInput').value;
+        const sDate = document.getElementById('shiftStartDateInput').value;
+        const eDate = document.getElementById('shiftEndDateInput').value;
+        if (sDate && eDate && sDate === eDate && eTime < sTime) {
+          document.getElementById('shiftEndDateInput').value = addDaysToDateStr(sDate, 1);
+          updateOvernightBadge();
+        }
+      });
+
+      document.getElementById('addShiftForm').addEventListener('submit', (e) => {
+        e.preventDefault();
+        const editingId = document.getElementById('editingEntryId').value;
+        const startDate = document.getElementById('shiftStartDateInput').value;
+        let endDate = document.getElementById('shiftEndDateInput').value;
+        const checkedRadio = document.querySelector('input[name="helperId"]:checked');
+        const helperId = checkedRadio ? checkedRadio.value : (helpers[0] && helpers[0].id);
+        const start = document.getElementById('shiftStartInput').value;
+        const end = document.getElementById('shiftEndInput').value;
+
+        if (!helperId || !isValidDateStr(startDate) || !isValidDateStr(endDate)) return;
+
+        if (endDate < startDate) {
+          alert('結束日期不能早於開始日期！');
+          return;
+        }
+        if (getDaysDiff(startDate, endDate) > 60) {
+          alert('單次跨日排班請勿超過 60 天！');
+          return;
+        }
+        if (startDate === endDate && end < start) {
+          endDate = addDaysToDateStr(startDate, 1);
+        }
+
+        if (editingId) {
+          const idx = entries.findIndex(item => item.id === editingId);
+          if (idx > -1) {
+            entries[idx] = { ...entries[idx], startDate, endDate, helperId, shift: selectedShiftPreset, start, end };
+          }
+        } else {
+          entries.push({
+            id: 'entry_' + Date.now(),
+            startDate,
+            endDate,
+            helperId,
+            shift: selectedShiftPreset,
+            start,
+            end
+          });
+        }
+
+        selectedDateStr = startDate;
+        const [y, m] = startDate.split('-').map(Number);
+        currentYear = y;
+        currentMonth = m - 1;
+
+        saveEntries();
+        closeShiftFormModal();
+        refreshAllViews();
+      });
+
+      document.getElementById('cancelActionMenuBtn').addEventListener('click', closeActionMenu);
+      document.getElementById('editEntryBtn').addEventListener('click', () => {
+        if (!activeActionEntryId) return;
+        const idToEdit = activeActionEntryId;
+        closeActionMenu();
+        openShiftFormModal({ entryId: idToEdit });
+      });
+      document.getElementById('deleteEntryBtn').addEventListener('click', () => {
+        if (!activeActionEntryId) return;
+        entries = entries.filter(e => e.id !== activeActionEntryId);
+        saveEntries();
+        closeActionMenu();
+        refreshAllViews();
+      });
+
+      document.getElementById('openHelperModalBtn').addEventListener('click', openHelperManagerModal);
+      document.getElementById('navHelpersBtn').addEventListener('click', openHelperManagerModal);
+      document.getElementById('closeHelperModalBtn').addEventListener('click', closeHelperManagerModal);
+      document.getElementById('showNewHelperFormBtn').addEventListener('click', () => openHelperEditor(null));
+      document.getElementById('cancelHelperEditBtn').addEventListener('click', () => {
+        document.getElementById('helperEditorCard').classList.add('hidden');
+      });
+
+      document.getElementById('helperColorPicker').addEventListener('click', (e) => {
+        const btn = e.target.closest('.helper-color-btn');
+        if (!btn) return;
+        tempHelperColor = btn.getAttribute('data-color');
+        renderHelperEditorPickers();
+      });
+
+      document.getElementById('helperIconPicker').addEventListener('click', (e) => {
+        const btn = e.target.closest('.helper-icon-btn');
+        if (!btn) return;
+        tempHelperIcon = btn.getAttribute('data-icon');
+        renderHelperEditorPickers();
+      });
+
+      document.getElementById('customEmojiInput').addEventListener('input', (e) => {
+        const val = e.target.value.trim();
+        if (val) {
+          const emojis = Array.from(val);
+          tempHelperIcon = emojis.slice(0, 2).join('');
+          updateHelperIconPreviewBadge();
+        }
+      });
+
+      document.getElementById('saveHelperBtn').addEventListener('click', () => {
+        const id = document.getElementById('editingHelperId').value;
+        const name = document.getElementById('helperNameInput').value.trim();
+        if (!name) {
+          alert('請輸入照顧者稱呼！');
+          return;
+        }
+        if (id) {
+          const h = helpers.find(item => item.id === id);
+          if (h) {
+            h.name = name;
+            h.color = tempHelperColor;
+            h.icon = tempHelperIcon;
+          }
+        } else {
+          helpers.push({
+            id: 'h_' + Date.now(),
+            name,
+            color: tempHelperColor,
+            icon: tempHelperIcon
+          });
+        }
+        saveHelpers();
+        document.getElementById('helperEditorCard').classList.add('hidden');
+        renderHelperManagerList();
+        refreshAllViews();
+      });
+
+      document.getElementById('helperManagerList').addEventListener('click', (e) => {
+        const editBtn = e.target.closest('[data-edit-helper]');
+        if (editBtn) {
+          const h = helpers.find(item => item.id === editBtn.getAttribute('data-edit-helper'));
+          if (h) openHelperEditor(h);
+          return;
+        }
+        const delBtn = e.target.closest('[data-delete-helper]');
+        if (delBtn) {
+          if (helpers.length <= 1) {
+            alert('至少需保留一位照顧者！');
+            return;
+          }
+          const id = delBtn.getAttribute('data-delete-helper');
+          const target = helpers.find(item => item.id === id);
+          if (target && confirm(`確定要刪除「${target.name}」及其相關排班嗎？`)) {
+            helpers = helpers.filter(item => item.id !== id);
+            entries = entries.filter(e => e.helperId !== id);
+            if (activeHelperFilter === id) activeHelperFilter = 'ALL';
+            saveHelpers();
+            saveEntries();
+            renderHelperManagerList();
+            refreshAllViews();
+          }
+        }
+      });
+
+      document.getElementById('navCalendarBtn').addEventListener('click', () => {
+        closeShiftFormModal();
+        closeHelperManagerModal();
+        closeAnnouncementModal();
+      });
+
+      // 僅在螢幕寬度實際改變時才重新計算甘特圖，避免手機滑動網址列收合時造成卡頓
+      let lastWindowWidth = window.innerWidth;
+      let resizeTimer = null;
+      window.addEventListener('resize', () => {
+        if (window.innerWidth !== lastWindowWidth) {
+          lastWindowWidth = window.innerWidth;
+          if (resizeTimer) clearTimeout(resizeTimer);
+          resizeTimer = setTimeout(() => {
+            renderGanttChart();
+          }, 200);
+        }
+      });
+    }
+
+    // 啟動應用程式與雲端同步
+    checkPinVerification();
+    bindPinEvents();
+    bindGlobalEvents();
+    refreshAllViews();
+    initFirebaseCloudSync();
+  </script>
+</body>
+</html>
