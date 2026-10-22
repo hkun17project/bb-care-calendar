@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-  <title>BB 照顧排班日曆 v1.7</title>
+  <title>BB 照顧排班日曆 v1.8</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
   <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
@@ -42,15 +42,54 @@
     .chip-size-sm     { width: 17px; height: 17px; font-size: 9px; }
     .chip-size-xs     { width: 14px; height: 14px; font-size: 7.5px; }
     .chip-size-xxs    { width: 11.5px; height: 11.5px; font-size: 6.5px; }
-    .gantt-row-grid { display: flex; align-items: center; width: 100%; }
+
+    /* 甘特圖連貫式夜間背景與對齊樣式 */
+    .gantt-row-grid { display: flex; align-items: center; width: 100%; position: relative; z-index: 3; }
     .gantt-label-col { width: 74px; flex-shrink: 0; padding-right: 6px; }
     .gantt-track-col { flex: 1; position: relative; min-width: 0; }
-    .gantt-track-bar { height: 24px; background: #F1F5F9; border-radius: 7px; position: relative; overflow: hidden; border: 1px solid #E2E8F0; }
-    .gantt-night-zone { position: absolute; top: 0; bottom: 0; background-color: rgba(30,58,138,0.5); pointer-events: none; z-index: 1; }
-    .gantt-grid-line { position: absolute; top: 0; bottom: 0; width: 1px; border-left: 1px dashed rgba(100,116,139,0.35); pointer-events: none; z-index: 2; }
+    .gantt-rows-wrapper { position: relative; width: 100%; }
+    /* 連貫整片式時間軸底層：由第一位指定照顧者頂部一直延伸至最後一位底部 */
+    .gantt-unified-backdrop {
+      position: absolute;
+      left: 74px;
+      right: 0;
+      top: 0;
+      bottom: 0;
+      background: #F1F5F9;
+      border-radius: 8px;
+      border: 1px solid #E2E8F0;
+      overflow: hidden;
+      pointer-events: none;
+      z-index: 1;
+    }
+    .gantt-night-zone {
+      position: absolute;
+      top: 0;
+      bottom: 0;
+      background-color: rgba(30, 58, 138, 0.5);
+      pointer-events: none;
+      z-index: 1;
+    }
+    .gantt-grid-line {
+      position: absolute;
+      top: 0;
+      bottom: 0;
+      width: 1px;
+      border-left: 1px dashed rgba(100, 116, 139, 0.35);
+      pointer-events: none;
+      z-index: 2;
+    }
+    .gantt-row-lane {
+      height: 28px;
+      position: relative;
+      width: 100%;
+    }
+    .gantt-row-grid:not(:last-child) .gantt-row-lane {
+      border-bottom: 1px solid rgba(203, 213, 225, 0.45);
+    }
     .gantt-bar {
-      position: absolute; top: 2px; bottom: 2px; border-radius: 5px; display: flex; align-items: center; justify-content: center;
-      color: #FFFFFF; font-weight: 700; white-space: nowrap; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.22);
+      position: absolute; top: 3px; bottom: 3px; border-radius: 5px; display: flex; align-items: center; justify-content: center;
+      color: #FFFFFF; font-weight: 700; white-space: nowrap; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.24);
       cursor: pointer; z-index: 5; padding: 0 3px; line-height: 1;
     }
     .gantt-bar-text { display: inline-block; white-space: nowrap; line-height: 1; text-shadow: 0 1px 2px rgba(0,0,0,0.28); }
@@ -123,7 +162,7 @@
           <div class="min-w-0">
             <div class="flex items-center gap-1">
               <h1 class="text-sm font-extrabold text-slate-800 tracking-tight leading-tight truncate">BB 照顧排班日曆</h1>
-              <span class="text-[9px] font-bold px-1 py-0.5 rounded bg-pink-100 text-pink-600 shrink-0">v1.7</span>
+              <span class="text-[9px] font-bold px-1 py-0.5 rounded bg-pink-100 text-pink-600 shrink-0">v1.8</span>
               <span id="cloudSyncBadge" class="inline-flex items-center gap-1 text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-slate-100 text-slate-500 border border-slate-200 shrink-0">
                 <span id="cloudSyncDot" class="w-1.5 h-1.5 rounded-full bg-slate-400"></span>
                 <span id="cloudSyncText">本機快取</span>
@@ -209,12 +248,12 @@
 
       <!-- 每日照顧者時間軸橫向長條圖 (Gantt Chart) -->
       <div id="ganttCardContainer" class="bg-white rounded-2xl p-3 shadow-sm border border-slate-100 select-none">
-        <div class="flex items-center justify-between gap-1 mb-1.5">
-          <div class="flex items-center gap-1.5 min-w-0">
+        <div class="flex items-center justify-between gap-1.5 mb-1.5">
+          <div class="flex items-center gap-1 min-w-0">
             <i class="fa-solid fa-chart-gantt text-pink-500 text-xs shrink-0"></i>
             <h3 class="text-xs font-extrabold text-slate-700 whitespace-nowrap">當日照顧時間軸</h3>
-            <span class="text-[10px] text-slate-400 font-medium bg-slate-100 px-1.5 py-0.5 rounded-md inline-flex items-center gap-1 whitespace-nowrap shrink-0">
-              <i class="fa-solid fa-arrows-left-right text-[9px] text-pink-400"></i>左右滑動切換
+            <span class="text-[9px] text-slate-400 font-medium bg-slate-100 px-1.5 py-0.5 rounded-md inline-flex items-center gap-0.5 whitespace-nowrap shrink-0">
+              <i class="fa-solid fa-arrows-left-right text-[8px] text-pink-400"></i>滑動換日
             </span>
           </div>
           <div class="flex items-center gap-1 shrink-0">
@@ -247,7 +286,8 @@
               <span class="absolute right-0">23:59</span>
             </div>
           </div>
-          <div id="ganttBody" class="space-y-1.5"></div>
+          <!-- Y 軸照顧者與連貫式夜間時間軸區域 -->
+          <div id="ganttBody"></div>
         </div>
       </div>
 
@@ -380,6 +420,9 @@
                 <input id="shiftEndInput" type="time" required class="w-full rounded-xl border border-slate-200 bg-white px-2.5 py-2 text-xs font-semibold text-slate-800" />
               </div>
             </div>
+            <p class="text-[10px] text-slate-400 leading-relaxed">
+              <i class="fa-solid fa-circle-info mr-1 text-pink-400"></i>若手動修改的時間不符合預設更期，系統會自動按開始時間標籤為「早更 (06:00-11:59)」、「午更 (12:00-17:59)」或「夜更 (18:00-05:59)」。
+            </p>
           </div>
           <button type="submit" class="w-full py-3 rounded-xl bg-gradient-to-r from-pink-500 to-rose-500 text-white font-bold text-sm shadow-md">儲存排班</button>
         </form>
@@ -455,7 +498,7 @@
       </div>
     </div>
 
-    <!-- 彈窗 4：新增及修改更期設定 Modal (v1.7 新增) -->
+    <!-- 彈窗 4：新增及修改更期設定 Modal -->
     <div id="shiftPresetManagerModal" class="fixed inset-0 z-50 bg-slate-900/50 hidden items-end justify-center">
       <div class="bg-white w-full max-w-[430px] rounded-t-3xl p-5 max-h-[88dvh] overflow-y-auto shadow-2xl">
         <div class="flex items-center justify-between pb-3 border-b border-slate-100">
@@ -474,7 +517,6 @@
           </button>
         </div>
 
-        <!-- 新增/修改更期表單 -->
         <div id="shiftPresetEditorCard" class="hidden mt-3 bg-slate-50 rounded-2xl p-3.5 border border-slate-200 space-y-3">
           <div class="flex items-center justify-between">
             <h4 id="shiftPresetEditorTitle" class="text-xs font-extrabold text-slate-700">新增更期</h4>
@@ -482,7 +524,7 @@
           </div>
           <input type="hidden" id="editingShiftPresetId" value="" />
           <div>
-            <label class="block text-[11px] font-bold text-slate-600 mb-1">更期名稱 (例如：早更、通宵更、傍晚更)</label>
+            <label class="block text-[11px] font-bold text-slate-600 mb-1">更期名稱 (例如：早更、通宵更、放A後)</label>
             <input id="shiftPresetLabelInput" type="text" placeholder="請輸入更期名稱" class="w-full rounded-xl border border-slate-200 bg-white px-3 py-1.5 text-xs font-bold text-slate-800" />
           </div>
           <div class="grid grid-cols-2 gap-2.5">
@@ -504,7 +546,6 @@
           </button>
         </div>
 
-        <!-- 現有更期列表 -->
         <div id="shiftPresetManagerList" class="space-y-2.5 mt-4"></div>
       </div>
     </div>
@@ -529,7 +570,8 @@
           { icon: '👴', label: '爺爺/公公' }, { icon: '👩‍🍼', label: '餵奶姐姐' }, { icon: '🧑‍🍼', label: '貼心照顧' }, { icon: '👶', label: '可愛BB' },
           { icon: '🐱', label: '貓咪' }, { icon: '🐶', label: '狗狗' }, { icon: '🐼', label: '熊貓' }, { icon: '🐰', label: '小兔' },
           { icon: '🦊', label: '狐狸' }, { icon: '🐻', label: '小熊' }, { icon: '🐨', label: '無尾熊' }, { icon: '🐯', label: '小虎' },
-          { icon: '🦁', label: '獅子' }, { icon: '🐧', label: '企鵝' }, { icon: '🦄', label: '獨角獸' }, { icon: '🧸', label: '泰迪熊' }
+          { icon: '🦁', label: '獅子' }, { icon: '🐧', label: '企鵝' }, { icon: '🐣', label: '小雞' }, { icon: '🦔', label: '刺蝟' },
+          { icon: '🦦', label: '水獺' }, { icon: '🐦', label: '小鳥' }, { icon: '🦄', label: '獨角獸' }, { icon: '🧸', label: '泰迪熊' }
         ]
       },
       {
@@ -565,7 +607,6 @@
       { id: 'h7', name: '工人', icon: 'fa-hands-holding-child',  color: '#F97316' }
     ];
 
-    // 更期主題色與圖示選項
     const SHIFT_THEMES = [
       { id: 'amber',   name: '晨光黃', icon: 'fa-sun',        iconColor: 'text-amber-500',   badgeBg: '#FEF3C7', badgeText: '#B45309' },
       { id: 'orange',  name: '暖陽橙', icon: 'fa-cloud-sun',  iconColor: 'text-orange-500',  badgeBg: '#FFEDD5', badgeText: '#C2410C' },
@@ -575,7 +616,6 @@
       { id: 'purple',  name: '薰衣紫', icon: 'fa-star',       iconColor: 'text-purple-500',  badgeBg: '#F3E8FF', badgeText: '#6D28D9' }
     ];
 
-    // 預設更期清單 (支援使用者新增、修改、刪除)
     const DEFAULT_SHIFT_PRESETS = [
       { id: 'morning',   label: '早更', defaultStart: '06:00', defaultEnd: '11:59', icon: 'fa-sun',       iconColor: 'text-amber-500',  badgeBg: '#FEF3C7', badgeText: '#B45309' },
       { id: 'afternoon', label: '午更', defaultStart: '12:00', defaultEnd: '17:59', icon: 'fa-cloud-sun', iconColor: 'text-orange-500', badgeBg: '#FFEDD5', badgeText: '#C2410C' },
@@ -681,8 +721,51 @@
     let tempHelperIcon = '🐱';
     let tempShiftThemeId = 'amber';
 
+    function timeToMinutes(tStr) {
+      if (!tStr || typeof tStr !== 'string' || !tStr.includes(':')) return 0;
+      const [hh, mm] = tStr.split(':').map(Number);
+      return (isNaN(hh) || isNaN(mm)) ? 0 : Math.max(0, Math.min(1439, hh * 60 + mm));
+    }
+
     function getShiftPresetById(shiftId) {
       return shiftPresets.find(s => s.id === shiftId) || shiftPresets[0] || DEFAULT_SHIFT_PRESETS[0];
+    }
+
+    /**
+     * 智慧型更期標籤判斷 (v1.8 核心更新)：
+     * 1. 若該排班的開始與結束時間完全符合所選預設更期，或符合任何一個預設更期，則顯示該預設更期標籤。
+     * 2. 若不符合任何預設更期時間，則根據排班的「開始時間 (entry.start)」自動歸類為：
+     *    - 早更 (06:00 - 11:59)
+     *    - 午更 (12:00 - 17:59)
+     *    - 夜更 (18:00 - 05:59)
+     */
+    function resolveEntryShiftBadge(entry) {
+      if (!entry) return { label: '早更', badgeBg: '#FEF3C7', badgeText: '#B45309' };
+
+      // 1. 檢查是否與原本記錄的預設更期時間完全吻合
+      const assignedPreset = shiftPresets.find(s => s.id === entry.shift);
+      if (assignedPreset && assignedPreset.defaultStart === entry.start && assignedPreset.defaultEnd === entry.end) {
+        return assignedPreset;
+      }
+
+      // 2. 檢查是否與清單中任何一個預設更期的開始與結束時間完全吻合
+      const exactMatchPreset = shiftPresets.find(s => s.defaultStart === entry.start && s.defaultEnd === entry.end);
+      if (exactMatchPreset) {
+        return exactMatchPreset;
+      }
+
+      // 3. 若不符合任何預設更期時間，根據開始時間自動判斷「早更 / 午更 / 夜更」
+      const startMin = timeToMinutes(entry.start);
+      if (startMin >= 360 && startMin <= 719) {
+        // 06:00 - 11:59
+        return { label: '早更', badgeBg: '#FEF3C7', badgeText: '#B45309' };
+      } else if (startMin >= 720 && startMin <= 1079) {
+        // 12:00 - 17:59
+        return { label: '午更', badgeBg: '#FFEDD5', badgeText: '#C2410C' };
+      } else {
+        // 18:00 - 05:59
+        return { label: '夜更', badgeBg: '#E0E7FF', badgeText: '#4338CA' };
+      }
     }
 
     // Firebase 雲端同步
@@ -791,12 +874,6 @@
     }
 
     const getHelperById = id => helpers.find(h => h.id === id) || helpers[0] || DEFAULT_HELPERS[0];
-
-    function timeToMinutes(tStr) {
-      if (!tStr || typeof tStr !== 'string' || !tStr.includes(':')) return 0;
-      const [hh, mm] = tStr.split(':').map(Number);
-      return (isNaN(hh) || isNaN(mm)) ? 0 : Math.max(0, Math.min(1439, hh * 60 + mm));
-    }
 
     function getDaysDiff(s, e) {
       if (!isValidDateStr(s) || !isValidDateStr(e)) return 0;
@@ -925,6 +1002,9 @@
       }).join('');
     }
 
+    /**
+     * 渲染當日照顧時間軸 (v1.8 連貫式深藍色夜間區間：由第一位指定照顧者頂部連貫延伸至最後一位底部)
+     */
     function renderGanttChart(swipeDirection = null) {
       const ganttBody = document.getElementById('ganttBody');
       const ganttDateTitle = document.getElementById('ganttDateTitle');
@@ -963,7 +1043,7 @@
         return;
       }
 
-      ganttBody.innerHTML = ids.map(id => {
+      const rowsHtml = ids.map(id => {
         const h = getHelperById(id);
         const hEntries = dayEntries.filter(e => e.helperId === h.id);
         const barsHtml = hEntries.map(entry => {
@@ -976,23 +1056,32 @@
           }).join('');
         }).join('');
 
-        return `<div class="gantt-row-grid py-0.5">
-          <div class="gantt-label-col flex items-center gap-1.5 overflow-hidden">
+        return `<div class="gantt-row-grid">
+          <div class="gantt-label-col flex items-center gap-1.5 overflow-hidden py-1">
             <span class="w-5 h-5 rounded-full flex items-center justify-center text-white text-[10px] shrink-0" style="background:${h.color}">${renderHelperIconHtml(h.icon)}</span>
             <span class="text-[11px] font-bold text-slate-700 truncate">${h.name}</span>
           </div>
           <div class="gantt-track-col">
-            <div class="gantt-track-bar">
-              <div class="gantt-night-zone" style="left:0%;width:25%;"></div>
-              <div class="gantt-night-zone" style="left:75%;width:25%;"></div>
-              <div class="gantt-grid-line" style="left:25%;"></div>
-              <div class="gantt-grid-line" style="left:50%;"></div>
-              <div class="gantt-grid-line" style="left:75%;"></div>
+            <div class="gantt-row-lane">
               ${barsHtml}
             </div>
           </div>
         </div>`;
       }).join('');
+
+      // 使用統一連貫的底層區間 (.gantt-unified-backdrop)，讓深藍色夜間時段由第一位照顧者頂部一直連貫延伸至最後一位底部
+      ganttBody.innerHTML = `
+        <div class="gantt-rows-wrapper">
+          <div class="gantt-unified-backdrop">
+            <div class="gantt-night-zone" style="left:0%;width:25%;"></div>
+            <div class="gantt-night-zone" style="left:75%;width:25%;"></div>
+            <div class="gantt-grid-line" style="left:25%;"></div>
+            <div class="gantt-grid-line" style="left:50%;"></div>
+            <div class="gantt-grid-line" style="left:75%;"></div>
+          </div>
+          ${rowsHtml}
+        </div>
+      `;
 
       requestAnimationFrame(() => {
         ganttBody.querySelectorAll('.gantt-bar').forEach(bar => {
@@ -1024,7 +1113,7 @@
       }
       listEl.innerHTML = dayEntries.map(entry => {
         const h = getHelperById(entry.helperId);
-        const sInfo = getShiftPresetById(entry.shift);
+        const sInfo = resolveEntryShiftBadge(entry);
         return `<div class="flex items-center justify-between p-2.5 rounded-xl bg-slate-50/90 border border-slate-100">
           <div class="flex items-center gap-2.5">
             <div class="w-9 h-9 rounded-xl flex items-center justify-center text-white text-sm cursor-pointer" data-entry-id="${entry.id}" style="background:${h.color}">
@@ -1053,7 +1142,6 @@
       renderSelectedDateSummary();
     }
 
-    // 排班表單內動態渲染更期分類按鈕
     function renderShiftPresetButtonsInForm() {
       const grid = document.getElementById('shiftPresetButtonsGrid');
       if (!grid) return;
@@ -1137,7 +1225,6 @@
       if (m) { m.classList.add('hidden'); m.classList.remove('flex'); }
     }
 
-    // 更期管理 Modal (v1.7 新增及修改更期功能)
     function renderShiftPresetThemePicker() {
       const container = document.getElementById('shiftPresetThemePicker');
       if (!container) return;
@@ -1204,7 +1291,7 @@
       if (!e) return;
       activeActionEntryId = entryId;
       const h = getHelperById(e.helperId);
-      const sInfo = getShiftPresetById(e.shift);
+      const sInfo = resolveEntryShiftBadge(e);
       const badge = document.getElementById('actionMenuHelperBadge');
       badge.style.background = h.color;
       badge.innerHTML = renderHelperIconHtml(h.icon);
@@ -1463,7 +1550,6 @@
     on('navAddShiftBtn', 'click', () => openShiftFormModal({ dateStr: selectedDateStr }));
     on('closeShiftFormModalBtn', 'click', closeShiftFormModal);
 
-    // 動態更期按鈕事件委派
     on('shiftPresetButtonsGrid', 'click', e => {
       const b = e.target.closest('.shift-preset-btn');
       if (b) highlightShiftPresetButton(b.getAttribute('data-shift'), true);
@@ -1478,7 +1564,6 @@
       updateOvernightBadge();
     });
 
-    // 更期管理 Modal 事件綁定
     on('navShiftPresetsBtn', 'click', openShiftPresetManagerModal);
     on('openShiftPresetManagerFromFormBtn', 'click', openShiftPresetManagerModal);
     on('closeShiftPresetModalBtn', 'click', closeShiftPresetManagerModal);
