@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-  <title>BB 照顧排班日曆 v1.4</title>
+  <title>BB 照顧排班日曆 v1.5</title>
   <!-- Tailwind CSS -->
   <script src="https://cdn.tailwindcss.com"></script>
   <!-- Font Awesome 6 Free -->
@@ -237,6 +237,15 @@
       40%, 80% { transform: translateX(10px); }
     }
     .pin-shake { animation: pinShake 0.35s ease-in-out; }
+
+    /* 更期編輯模式輕微搖擺與彈出動畫 */
+    @keyframes popInBadge {
+      0% { transform: scale(0.4); opacity: 0; }
+      100% { transform: scale(1); opacity: 1; }
+    }
+    .pop-in-anim {
+      animation: popInBadge 0.18s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
     .no-scrollbar::-webkit-scrollbar { display: none; }
   </style>
 </head>
@@ -296,7 +305,7 @@
           <div class="min-w-0">
             <div class="flex items-center gap-1">
               <h1 class="text-sm font-extrabold text-slate-800 tracking-tight leading-tight truncate">BB 照顧排班日曆</h1>
-              <span class="text-[9px] font-bold px-1 py-0.5 rounded bg-pink-100 text-pink-600 shrink-0">v1.4</span>
+              <span class="text-[9px] font-bold px-1 py-0.5 rounded bg-pink-100 text-pink-600 shrink-0">v1.5</span>
               <span id="cloudSyncBadge" class="inline-flex items-center gap-1 text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-slate-100 text-slate-500 border border-slate-200 shrink-0">
                 <span id="cloudSyncDot" class="w-1.5 h-1.5 rounded-full bg-slate-400"></span>
                 <span id="cloudSyncText">本機快取</span>
@@ -534,29 +543,32 @@
             <div id="helperRadioGrid" class="grid grid-cols-4 gap-2"></div>
           </div>
 
+          <!-- 2. 選擇更期分類 (支援長按更期彈出右上角鉛筆編輯及下方 + 新增更期) -->
           <div>
-            <div class="flex items-center justify-between mb-1.5">
-              <label class="block text-xs font-bold text-slate-700">2. 選擇更期分類 (點擊可快填時間)</label>
-              <button type="button" id="fullDayQuickBtn" class="text-[11px] font-extrabold text-white bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600 px-3 py-1 rounded-full shadow-xs flex items-center gap-1 active:scale-95 transition">
+            <div class="flex items-center justify-between mb-1.5 gap-1">
+              <div>
+                <label class="block text-xs font-bold text-slate-700">2. 選擇更期分類</label>
+                <span class="text-[10px] text-slate-400 font-medium">點選快填時間 · <strong class="text-pink-500">長按更期</strong>可修改或新增</span>
+              </div>
+              <button type="button" id="fullDayQuickBtn" class="text-[11px] font-extrabold text-white bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600 px-3 py-1.5 rounded-full shadow-xs flex items-center gap-1 active:scale-95 transition shrink-0">
                 <i class="fa-solid fa-clock-rotate-left text-[10px]"></i>
                 <span>全日 (00:00–23:59)</span>
               </button>
             </div>
-            <div class="grid grid-cols-3 gap-2">
-              <button type="button" data-shift="morning" class="shift-preset-btn py-2 px-2 rounded-xl border text-xs font-bold flex flex-col items-center gap-0.5 transition">
-                <i class="fa-solid fa-sun text-amber-500 text-sm"></i>
-                <span>早更</span>
-                <span class="text-[9px] font-normal text-slate-400">06:00–11:59</span>
+
+            <!-- 動態更期方格列表 -->
+            <div id="shiftPresetGrid" class="grid grid-cols-3 gap-2.5 pt-1"></div>
+
+            <!-- 長按更期後方格下方彈出的「+」新增更期區域 -->
+            <div id="shiftEditAddContainer" class="hidden mt-2.5 pt-2 border-t border-dashed border-pink-200 flex items-center gap-2 pop-in-anim">
+              <button type="button" id="addNewShiftPresetBtn" class="flex-1 py-2 px-3 rounded-xl border-2 border-dashed border-pink-400 bg-pink-50/70 hover:bg-pink-100/80 text-pink-600 font-extrabold text-xs flex items-center justify-center gap-1.5 active:scale-98 transition shadow-2xs">
+                <span class="w-5 h-5 rounded-full bg-pink-500 text-white flex items-center justify-center text-[11px] shadow-xs">
+                  <i class="fa-solid fa-plus"></i>
+                </span>
+                <span>新增自訂更期</span>
               </button>
-              <button type="button" data-shift="afternoon" class="shift-preset-btn py-2 px-2 rounded-xl border text-xs font-bold flex flex-col items-center gap-0.5 transition">
-                <i class="fa-solid fa-cloud-sun text-orange-500 text-sm"></i>
-                <span>午更</span>
-                <span class="text-[9px] font-normal text-slate-400">12:00–17:59</span>
-              </button>
-              <button type="button" data-shift="night" class="shift-preset-btn py-2 px-2 rounded-xl border text-xs font-bold flex flex-col items-center gap-0.5 transition">
-                <i class="fa-solid fa-moon text-indigo-500 text-sm"></i>
-                <span>夜更</span>
-                <span class="text-[9px] font-normal text-slate-400">18:00–05:59</span>
+              <button type="button" id="doneShiftEditModeBtn" class="py-2 px-3 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-600 font-bold text-xs transition shrink-0">
+                完成
               </button>
             </div>
           </div>
@@ -602,7 +614,75 @@
       </div>
     </div>
 
-    <!-- 彈窗 2：長按圖示動作選單 (編輯 / 刪除) -->
+    <!-- 彈窗 1.5：新增 / 修改 / 刪除更期預設分類 Modal -->
+    <div id="shiftPresetEditorModal" class="fixed inset-0 z-[60] bg-slate-900/60 backdrop-blur-xs hidden items-center justify-center p-4">
+      <div class="bg-white w-full max-w-[380px] rounded-3xl p-5 max-h-[88dvh] overflow-y-auto shadow-2xl space-y-3.5 pop-in-anim">
+        <div class="flex items-center justify-between pb-2.5 border-b border-slate-100">
+          <div class="flex items-center gap-2">
+            <div id="shiftEditorPreviewIcon" class="w-9 h-9 rounded-xl flex items-center justify-center text-base shadow-xs"></div>
+            <div>
+              <h3 id="shiftPresetEditorTitle" class="text-sm font-extrabold text-slate-800">修改更期設定</h3>
+              <p class="text-[10px] text-slate-400">自訂更期名稱、圖示及預設起訖時間</p>
+            </div>
+          </div>
+          <button id="closeShiftPresetEditorBtn" type="button" class="w-7 h-7 rounded-full bg-slate-100 text-slate-500 flex items-center justify-center">
+            <i class="fa-solid fa-xmark text-xs"></i>
+          </button>
+        </div>
+
+        <input type="hidden" id="editingShiftPresetId" value="" />
+
+        <div>
+          <label class="block text-[11px] font-bold text-slate-600 mb-1">更期名稱 (例如：早更、傍晚更、餵奶更)</label>
+          <input id="shiftPresetNameInput" type="text" maxlength="10" placeholder="請輸入更期名稱" class="w-full rounded-xl border border-slate-200 bg-slate-50 focus:bg-white px-3 py-2 text-xs font-bold text-slate-800 focus:outline-none focus:border-pink-400" />
+        </div>
+
+        <div class="grid grid-cols-2 gap-2.5 bg-slate-50 p-2.5 rounded-2xl border border-slate-200/80">
+          <div>
+            <label class="block text-[10px] font-bold text-slate-500 mb-1">預設開始時間</label>
+            <input id="shiftPresetStartInput" type="time" class="w-full rounded-xl border border-slate-200 bg-white px-2.5 py-1.5 text-xs font-bold text-slate-800 focus:outline-none focus:border-pink-400" />
+          </div>
+          <div>
+            <label class="block text-[10px] font-bold text-slate-500 mb-1">預設結束時間</label>
+            <input id="shiftPresetEndInput" type="time" class="w-full rounded-xl border border-slate-200 bg-white px-2.5 py-1.5 text-xs font-bold text-slate-800 focus:outline-none focus:border-pink-400" />
+          </div>
+          <p class="col-span-2 text-[9.5px] text-slate-400">
+            <i class="fa-solid fa-moon text-indigo-400 mr-1"></i>若結束時間早於開始時間（如 18:00 至 05:59），點選時會自動設為跨夜翌日。
+          </p>
+        </div>
+
+        <div>
+          <label class="block text-[11px] font-bold text-slate-600 mb-1">標籤主題顏色</label>
+          <div id="shiftPresetColorPicker" class="flex items-center gap-2 flex-wrap"></div>
+        </div>
+
+        <!-- 自訂 Emoji 輸入框 -->
+        <div class="bg-slate-50 p-2.5 rounded-xl border border-slate-200 flex items-center justify-between gap-2">
+          <div class="min-w-0">
+            <label class="block text-[11px] font-bold text-pink-600">自訂輸入 Emoji 圖示</label>
+            <p class="text-[9.5px] text-slate-400">可直接用鍵盤輸入（如 🌅、🍼、🌙）</p>
+          </div>
+          <input id="shiftCustomEmojiInput" type="text" maxlength="4" placeholder="☀️" class="w-12 h-8 text-center text-sm rounded-xl border border-slate-200 bg-white focus:border-pink-400 focus:outline-none shrink-0" />
+        </div>
+
+        <div>
+          <label class="block text-[11px] font-bold text-slate-600 mb-1">或點選預設更期圖示</label>
+          <div id="shiftPresetIconPicker" class="grid grid-cols-4 gap-1.5 max-h-40 overflow-y-auto pr-0.5"></div>
+        </div>
+
+        <div class="flex items-center gap-2 pt-2 border-t border-slate-100">
+          <button id="deleteShiftPresetBtn" type="button" class="hidden px-3.5 py-2.5 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-600 font-bold text-xs flex items-center justify-center gap-1 transition">
+            <i class="fa-solid fa-trash-can"></i>
+            <span>刪除更期</span>
+          </button>
+          <button id="saveShiftPresetBtn" type="button" class="flex-1 py-2.5 rounded-xl bg-gradient-to-r from-pink-500 to-rose-500 text-white font-bold text-xs shadow-sm active:scale-98 transition">
+            儲存更期設定
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 彈窗 2：長按排班圖示動作選單 (編輯 / 刪除) -->
     <div id="longPressActionModal" class="fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-xs hidden items-center justify-center p-6">
       <div class="bg-white w-full max-w-[320px] rounded-3xl p-5 shadow-2xl text-center">
         <div id="actionMenuHelperBadge" class="w-12 h-12 rounded-2xl mx-auto flex items-center justify-center text-white text-xl shadow-md mb-2.5"></div>
@@ -794,7 +874,7 @@
     }
 
     /**************************************************************
-     * 1. 圖示庫 (支援 Emoji + 人物角色 + 可愛動物) 與預設資料
+     * 1. 圖示庫、預設照顧者與預設更期資料
      **************************************************************/
     const ICON_CATEGORIES = [
       {
@@ -870,6 +950,42 @@
       }
     ];
 
+    // 更期專用圖示選擇庫 (支援經典 Font Awesome 及 Emoji)
+    const SHIFT_ICON_OPTIONS = [
+      { icon: 'fa-sun',           label: '早更太陽' },
+      { icon: 'fa-cloud-sun',     label: '午更日光' },
+      { icon: 'fa-moon',          label: '夜更月亮' },
+      { icon: 'fa-star',          label: '通宵星光' },
+      { icon: 'fa-clock',         label: '時鐘' },
+      { icon: 'fa-mug-hot',       label: '早茶/休息' },
+      { icon: 'fa-utensils',      label: '餵食/加固' },
+      { icon: 'fa-bath',          label: '沖涼時段' },
+      { icon: 'fa-bed',           label: '陪睡時段' },
+      { icon: 'fa-baby-carriage', label: '外出散步' },
+      { icon: 'fa-bell',          label: '重點提醒' },
+      { icon: 'fa-heart',         label: '愛心陪伴' },
+      { icon: '🌅',               label: '日出晨光' },
+      { icon: '☀️',               label: '陽光普照' },
+      { icon: '🌇',               label: '傍晚黃昏' },
+      { icon: '🌙',               label: '夜間彎月' },
+      { icon: '🍼',               label: '飲奶時段' },
+      { icon: '🛁',               label: 'BB沖涼' },
+      { icon: '💤',               label: 'BB睡覺' },
+      { icon: '🧸',               label: '陪玩時間' }
+    ];
+
+    // 更期主題配色方案
+    const SHIFT_COLOR_THEMES = [
+      { iconColor: '#F59E0B', badgeBg: '#FEF3C7', badgeText: '#B45309', name: '暖陽黃' },
+      { iconColor: '#F97316', badgeBg: '#FFEDD5', badgeText: '#C2410C', name: '活力橙' },
+      { iconColor: '#6366F1', badgeBg: '#E0E7FF', badgeText: '#4338CA', name: '星空藍' },
+      { iconColor: '#EC4899', badgeBg: '#FCE7F3', badgeText: '#BE185D', name: '溫馨粉' },
+      { iconColor: '#10B981', badgeBg: '#D1FAE5', badgeText: '#047857', name: '清新綠' },
+      { iconColor: '#0EA5E9', badgeBg: '#E0F2FE', badgeText: '#0369A1', name: '晴空藍' },
+      { iconColor: '#8B5CF6', badgeBg: '#EDE9FE', badgeText: '#6D28D9', name: '薰衣紫' },
+      { iconColor: '#F43F5E', badgeBg: '#FFE4E6', badgeText: '#BE123C', name: '玫瑰紅' }
+    ];
+
     const HELPER_COLORS = [
       '#EC4899', '#3B82F6', '#8B5CF6', '#0EA5E9',
       '#F59E0B', '#10B981', '#F97316', '#EF4444',
@@ -886,14 +1002,15 @@
       { id: 'h7', name: '工人', icon: 'fa-hands-holding-child',  color: '#F97316' }
     ];
 
-    const SHIFT_META = {
-      morning:   { label: '早更', defaultStart: '06:00', defaultEnd: '11:59', badgeBg: '#FEF3C7', badgeText: '#B45309' },
-      afternoon: { label: '午更', defaultStart: '12:00', defaultEnd: '17:59', badgeBg: '#FFEDD5', badgeText: '#C2410C' },
-      night:     { label: '夜更', defaultStart: '18:00', defaultEnd: '05:59', badgeBg: '#E0E7FF', badgeText: '#4338CA' }
-    };
+    const DEFAULT_SHIFTS = [
+      { id: 'morning',   label: '早更', icon: 'fa-sun',       iconColor: '#F59E0B', defaultStart: '06:00', defaultEnd: '11:59', badgeBg: '#FEF3C7', badgeText: '#B45309' },
+      { id: 'afternoon', label: '午更', icon: 'fa-cloud-sun', iconColor: '#F97316', defaultStart: '12:00', defaultEnd: '17:59', badgeBg: '#FFEDD5', badgeText: '#C2410C' },
+      { id: 'night',     label: '夜更', icon: 'fa-moon',      iconColor: '#6366F1', defaultStart: '18:00', defaultEnd: '05:59', badgeBg: '#E0E7FF', badgeText: '#4338CA' }
+    ];
 
     const STORAGE_KEY_HELPERS      = 'bb_care_helpers_v5_safe';
     const STORAGE_KEY_ENTRIES      = 'bb_care_entries_v5_safe';
+    const STORAGE_KEY_SHIFTS       = 'bb_care_shifts_v1';
     const STORAGE_KEY_WEEKSTART    = 'bb_care_weekstart_v5_safe';
     const STORAGE_KEY_ANNOUNCEMENT = 'bb_care_announcement_v1';
     const DEFAULT_ANNOUNCEMENT     = '🍼 歡迎使用 BB 照顧排班日曆！請各位家人及姐姐確認每日交接時間，辛苦晒大家！💕';
@@ -906,13 +1023,21 @@
     let weekStartsOnMonday = loadWeekStartPref();
 
     let helpers = loadHelpers();
+    let shiftPresets = loadShiftPresets();
     let entries = loadEntries();
     let announcementText = loadAnnouncement();
 
-    let selectedShiftPreset = 'morning';
+    let selectedShiftPreset = shiftPresets[0] ? shiftPresets[0].id : 'morning';
+    let isShiftEditMode = false; // 是否處於更期長按編輯/新增模式
     let activeActionEntryId = null;
+
+    // 照顧者編輯暫存
     let tempHelperColor = HELPER_COLORS[0];
     let tempHelperIcon = '🐱';
+
+    // 更期編輯暫存
+    let tempShiftThemeIdx = 0;
+    let tempShiftIcon = 'fa-sun';
 
     /**************************************************************
      * 1.5 Firebase 雲端即時同步設定 (防無窮迴圈保護版)
@@ -972,6 +1097,10 @@
                 helpers = data.helpers.filter(h => h && h.id && h.name && h.icon && h.color);
                 try { localStorage.setItem(STORAGE_KEY_HELPERS, JSON.stringify(helpers)); } catch (e) {}
               }
+              if (Array.isArray(data.shiftPresets) && data.shiftPresets.length > 0) {
+                shiftPresets = data.shiftPresets.filter(s => s && s.id && s.label && s.defaultStart && s.defaultEnd);
+                try { localStorage.setItem(STORAGE_KEY_SHIFTS, JSON.stringify(shiftPresets)); } catch (e) {}
+              }
               if (Array.isArray(data.entries)) {
                 entries = data.entries.filter(e =>
                   e && e.id && e.helperId &&
@@ -988,6 +1117,10 @@
                 try { localStorage.setItem(STORAGE_KEY_ANNOUNCEMENT, announcementText); } catch (e) {}
               }
               refreshAllViews();
+              const shiftModal = document.getElementById('shiftFormModal');
+              if (shiftModal && !shiftModal.classList.contains('hidden')) {
+                renderShiftPresetGrid(false);
+              }
               const helperModal = document.getElementById('helperManagerModal');
               if (helperModal && !helperModal.classList.contains('hidden')) {
                 renderHelperManagerList();
@@ -995,7 +1128,6 @@
             }
             updateCloudBadgeUI('synced');
           } else if (doc && !doc.metadata.fromCache && !hasAttemptedInitialSeed) {
-            // 僅在伺服器確認尚無初始文件、且本次連線尚未初始化過時執行一次，防止無窮迴圈
             hasAttemptedInitialSeed = true;
             syncToCloud();
           }
@@ -1017,6 +1149,7 @@
       syncDebounceTimer = setTimeout(() => {
         calendarDocRef.set({
           helpers: helpers,
+          shiftPresets: shiftPresets,
           entries: entries,
           announcementText: announcementText,
           updatedAtMs: Date.now()
@@ -1036,7 +1169,7 @@
       if (!iconStr) return `<i class="fa-solid fa-user ${extraClass}"></i>`;
       const trimmed = String(iconStr).trim();
       if (trimmed.startsWith('fa-')) {
-        return `<i class="fa-solid ${trimmed} ${extraClass}"></i>`;
+        return `<i class="fa-solid ${trimmed}${extraClass}"></i>`;
       }
       return `<span class="inline-flex items-center justify-center leading-none select-none ${extraClass}" style="font-style:normal;">${trimmed}</span>`;
     }
@@ -1046,29 +1179,7 @@
     }
 
     function formatDateKey(year, monthIndex, day) {
-      return `${year}-${pad2(monthIndex + 1)}-${pad2(day)}`;
-    }
-
-    function isValidDateStr(str) {
-      if (typeof str !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(str)) return false;
-      const [y, m, d] = str.split('-').map(Number);
-      const dt = new Date(y, m - 1, d);
-      return dt.getFullYear() === y && dt.getMonth() === m - 1 && dt.getDate() === d;
-    }
-
-    function addDaysToDateStr(dateStr, daysToAdd) {
-      if (!isValidDateStr(dateStr)) return selectedDateStr;
-      const [y, m, d] = dateStr.split('-').map(Number);
-      const dt = new Date(y, m - 1, d + daysToAdd);
-      return formatDateKey(dt.getFullYear(), dt.getMonth(), dt.getDate());
-    }
-
-    function formatDisplayDate(dateStr) {
-      if (!isValidDateStr(dateStr)) return '';
-      const [y, m, d] = dateStr.split('-').map(Number);
-      const dateObj = new Date(y, m - 1, d);
-      const weekdays = ['週日', '週一', '週二', '週三', '週四', '週五', '週六'];
-      return `${m}月${d}日 (${weekdays[dateObj.getDay()]})`;
+      return `${year}-${pad2(monthIndex + 1)}-${pad2(day)}`; }  function isValidDateStr(str) { if (typeof str !== 'string' \vert{}\vert{} !/^\d{4}-\d{2}-\d{2}$/.test(str)) return false; const [y, m, d] = str.split('-').map(Number); const dt = new Date(y, m - 1, d); return dt.getFullYear() === y && dt.getMonth() === m - 1 && dt.getDate() === d; }  function addDaysToDateStr(dateStr, daysToAdd) { if (!isValidDateStr(dateStr)) return selectedDateStr; const [y, m, d] = dateStr.split('-').map(Number); const dt = new Date(y, m - 1, d + daysToAdd); return formatDateKey(dt.getFullYear(), dt.getMonth(), dt.getDate()); }  function formatDisplayDate(dateStr) { if (!isValidDateStr(dateStr)) return ''; const [y, m, d] = dateStr.split('-').map(Number); const dateObj = new Date(y, m - 1, d); const weekdays = ['週日', '週一', '週二', '週三', '週四', '週五', '週六']; return `${m}月${d}日 (${weekdays[dateObj.getDay()]})`;
     }
 
     function formatShortDate(dateStr) {
@@ -1129,6 +1240,30 @@
         localStorage.setItem(STORAGE_KEY_HELPERS, JSON.stringify(helpers));
       } catch (e) {}
       syncToCloud();
+    }
+
+    function loadShiftPresets() {
+      try {
+        const raw = localStorage.getItem(STORAGE_KEY_SHIFTS);
+        if (raw) {
+          const parsed = JSON.parse(raw);
+          if (Array.isArray(parsed) && parsed.length > 0 && parsed.every(s => s && s.id && s.label && s.defaultStart && s.defaultEnd)) {
+            return parsed;
+          }
+        }
+      } catch (e) {}
+      return JSON.parse(JSON.stringify(DEFAULT_SHIFTS));
+    }
+
+    function saveShiftPresets() {
+      try {
+        localStorage.setItem(STORAGE_KEY_SHIFTS, JSON.stringify(shiftPresets));
+      } catch (e) {}
+      syncToCloud();
+    }
+
+    function getShiftMetaById(shiftId) {
+      return shiftPresets.find(s => s.id === shiftId) || shiftPresets[0] || DEFAULT_SHIFTS[0];
     }
 
     function loadEntries() {
@@ -1263,9 +1398,9 @@
     function formatEntryRangeBadge(entry) {
       const isMultiDay = entry.startDate !== entry.endDate;
       if (!isMultiDay) {
-        return `${entry.start} – ${entry.end}`;
+        return `${entry.start} –${entry.end}`;
       }
-      return `${formatShortDate(entry.startDate)} ${entry.start} → ${formatShortDate(entry.endDate)} ${entry.end}`;
+      return `${formatShortDate(entry.startDate)}${entry.start} → ${formatShortDate(entry.endDate)}${entry.end}`;
     }
 
     /**************************************************************
@@ -1504,8 +1639,8 @@
               <div
                 class="gantt-bar"
                 data-entry-id="${entry.id}"
-                title="${h.name}: ${label} (長按可編輯/刪除)"
-                style="left: ${leftPct.toFixed(2)}%; width: ${widthPct.toFixed(2)}%; background-color: ${h.color};"
+                title="${h.name}:${label} (長按可編輯/刪除)"
+                style="left: ${leftPct.toFixed(2)}%; width: ${widthPct.toFixed(2)}\%; background-color:${h.color};"
               >
                 <span class="gantt-bar-text ${textSizeClass}">${label}</span>
               </div>
@@ -1560,764 +1695,4 @@
       const todayKey = formatDateKey(now.getFullYear(), now.getMonth(), now.getDate());
 
       titleEl.textContent = selectedDateStr === todayKey
-        ? `當日照顧安排 · 今日 (${formatDisplayDate(selectedDateStr)})`
-        : `當日照顧安排 · ${formatDisplayDate(selectedDateStr)}`;
-
-      const dayEntries = getEntriesForDate(selectedDateStr);
-      if (dayEntries.length === 0) {
-        listEl.innerHTML = `
-          <div class="text-center py-5 bg-slate-50 rounded-xl border border-dashed border-slate-200">
-            <i class="fa-regular fa-calendar-xmark text-slate-300 text-xl mb-1"></i>
-            <p class="text-xs text-slate-400 font-medium">此日期暫無照顧排班，點擊上方「+ 新增當日排班」安排人手</p>
-          </div>
-        `;
-        return;
-      }
-
-      listEl.innerHTML = dayEntries.map(entry => {
-        const h = getHelperById(entry.helperId);
-        const shiftInfo = SHIFT_META[entry.shift] || SHIFT_META.morning;
-        const rangeText = formatEntryRangeBadge(entry);
-        return `
-          <div class="flex items-center justify-between p-2.5 rounded-xl bg-slate-50/90 border border-slate-100">
-            <div class="flex items-center gap-2.5">
-              <div
-                class="w-9 h-9 rounded-xl flex items-center justify-center text-white text-sm shadow-xs cursor-pointer"
-                data-entry-id="${entry.id}"
-                style="background:${h.color}"
-                title="長按可編輯或刪除"
-              >
-                ${renderHelperIconHtml(h.icon)}
-              </div>
-              <div>
-                <div class="flex items-center gap-1.5 flex-wrap">
-                  <span class="text-xs font-extrabold text-slate-800">${h.name}</span>
-                  <span class="text-[10px] font-bold px-1.5 py-0.5 rounded-md" style="background:${shiftInfo.badgeBg}; color:${shiftInfo.badgeText}">
-                    ${shiftInfo.label}
-                  </span>
-                </div>
-                <p class="text-[11px] text-pink-600 font-bold mt-0.5">
-                  <i class="fa-regular fa-clock mr-1"></i>${rangeText}
-                </p>
-              </div>
-            </div>
-            <button type="button" class="open-entry-action-btn w-7 h-7 rounded-full hover:bg-slate-200/70 text-slate-400 flex items-center justify-center text-xs" data-entry-id="${entry.id}">
-              <i class="fa-solid fa-ellipsis-vertical"></i>
-            </button>
-          </div>
-        `;
-      }).join('');
-    }
-
-    function refreshAllViews(swipeDirection = null) {
-      renderAnnouncementBar();
-      renderHelperLegend();
-      renderCalendar();
-      renderGanttChart(swipeDirection);
-      renderSelectedDateSummary();
-    }
-
-    /**************************************************************
-     * 4. 新增 / 編輯排班表單 Modal
-     **************************************************************/
-    function renderHelperRadioGrid(selectedHelperId) {
-      const container = document.getElementById('helperRadioGrid');
-      const chosen = selectedHelperId || (helpers[0] && helpers[0].id);
-      container.innerHTML = helpers.map(h => `
-        <label class="cursor-pointer">
-          <input type="radio" name="helperId" value="${h.id}" class="peer sr-only" ${h.id === chosen ? 'checked' : ''} />
-          <div class="p-2 rounded-xl border border-slate-200 bg-slate-50/60 peer-checked:border-pink-500 peer-checked:bg-pink-50/70 peer-checked:ring-2 peer-checked:ring-pink-200 flex flex-col items-center gap-1 transition">
-            <span class="w-8 h-8 rounded-full flex items-center justify-center text-white text-xs shadow-xs" style="background:${h.color}">
-              ${renderHelperIconHtml(h.icon)}
-            </span>
-            <span class="text-[11px] font-bold text-slate-700 truncate w-full text-center">${h.name}</span>
-          </div>
-        </label>
-      `).join('');
-    }
-
-    function updateOvernightBadge() {
-      const sDate = document.getElementById('shiftStartDateInput').value;
-      const eDate = document.getElementById('shiftEndDateInput').value;
-      const badge = document.getElementById('overnightBadge');
-      if (sDate && eDate && eDate > sDate) {
-        badge.classList.remove('hidden');
-      } else {
-        badge.classList.add('hidden');
-      }
-    }
-
-    function highlightShiftPresetButton(shiftKey, autofillTime = false) {
-      selectedShiftPreset = shiftKey;
-      document.querySelectorAll('.shift-preset-btn').forEach(btn => {
-        const key = btn.getAttribute('data-shift');
-        if (key === shiftKey) {
-          btn.classList.add('border-pink-500', 'bg-pink-50', 'text-pink-700');
-          btn.classList.remove('border-slate-200', 'bg-white', 'text-slate-700');
-        } else {
-          btn.classList.remove('border-pink-500', 'bg-pink-50', 'text-pink-700');
-          btn.classList.add('border-slate-200', 'bg-white', 'text-slate-700');
-        }
-      });
-
-      if (autofillTime && SHIFT_META[shiftKey]) {
-        const sDate = document.getElementById('shiftStartDateInput').value || selectedDateStr;
-        document.getElementById('shiftStartInput').value = SHIFT_META[shiftKey].defaultStart;
-        document.getElementById('shiftEndInput').value = SHIFT_META[shiftKey].defaultEnd;
-        if (shiftKey === 'night') {
-          document.getElementById('shiftEndDateInput').value = addDaysToDateStr(sDate, 1);
-        } else {
-          document.getElementById('shiftEndDateInput').value = sDate;
-        }
-        updateOvernightBadge();
-      }
-    }
-
-    function openShiftFormModal({ dateStr, entryId = null }) {
-      const formModal = document.getElementById('shiftFormModal');
-      const titleEl = document.getElementById('shiftFormTitle');
-      const editingInput = document.getElementById('editingEntryId');
-      const startDateInput = document.getElementById('shiftStartDateInput');
-      const endDateInput = document.getElementById('shiftEndDateInput');
-      const startInput = document.getElementById('shiftStartInput');
-      const endInput = document.getElementById('shiftEndInput');
-
-      if (entryId) {
-        const entry = entries.find(e => e.id === entryId);
-        if (!entry) return;
-        titleEl.textContent = '編輯照顧排班';
-        editingInput.value = entry.id;
-        startDateInput.value = entry.startDate;
-        endDateInput.value = entry.endDate;
-        renderHelperRadioGrid(entry.helperId);
-        highlightShiftPresetButton(entry.shift || 'morning', false);
-        startInput.value = entry.start;
-        endInput.value = entry.end;
-      } else {
-        const initDate = isValidDateStr(dateStr) ? dateStr : selectedDateStr;
-        titleEl.textContent = '新增照顧排班';
-        editingInput.value = '';
-        startDateInput.value = initDate;
-        endDateInput.value = initDate;
-        renderHelperRadioGrid(helpers[0] ? helpers[0].id : '');
-        highlightShiftPresetButton('morning', true);
-      }
-
-      updateOvernightBadge();
-      formModal.classList.remove('hidden');
-      formModal.classList.add('flex');
-    }
-
-    function closeShiftFormModal() {
-      const formModal = document.getElementById('shiftFormModal');
-      formModal.classList.add('hidden');
-      formModal.classList.remove('flex');
-    }
-
-    /**************************************************************
-     * 5. 長按圖示選單 (編輯 / 刪除)
-     **************************************************************/
-    function openActionMenuForEntry(entryId) {
-      const entry = entries.find(e => e.id === entryId);
-      if (!entry) return;
-      activeActionEntryId = entryId;
-      const h = getHelperById(entry.helperId);
-      const shiftInfo = SHIFT_META[entry.shift] || SHIFT_META.morning;
-
-      const badge = document.getElementById('actionMenuHelperBadge');
-      badge.style.background = h.color;
-      badge.innerHTML = renderHelperIconHtml(h.icon);
-
-      document.getElementById('actionMenuTitle').textContent = `${h.name} · ${shiftInfo.label}`;
-      document.getElementById('actionMenuSubtitle').textContent =
-        `${formatDisplayDate(entry.startDate)} ${entry.start} 至 ${formatDisplayDate(entry.endDate)} ${entry.end}`;
-
-      const modal = document.getElementById('longPressActionModal');
-      modal.classList.remove('hidden');
-      modal.classList.add('flex');
-    }
-
-    function closeActionMenu() {
-      activeActionEntryId = null;
-      const modal = document.getElementById('longPressActionModal');
-      modal.classList.add('hidden');
-      modal.classList.remove('flex');
-    }
-
-    /**************************************************************
-     * 6. 照顧者設定 Modal (支援 Emoji + 人物 + 動物圖示)
-     **************************************************************/
-    function updateHelperIconPreviewBadge() {
-      const preview = document.getElementById('currentIconPreviewBadge');
-      if (!preview) return;
-      preview.style.background = tempHelperColor;
-      preview.innerHTML = renderHelperIconHtml(tempHelperIcon);
-    }
-
-    function renderHelperEditorPickers() {
-      const colorContainer = document.getElementById('helperColorPicker');
-      colorContainer.innerHTML = HELPER_COLORS.map(c => `
-        <button type="button" data-color="${c}" class="helper-color-btn w-6 h-6 rounded-full transition ${
-          tempHelperColor === c ? 'ring-2 ring-offset-2 ring-slate-700 scale-110' : 'opacity-80'
-        }" style="background:${c}"></button>
-      `).join('');
-
-      const iconContainer = document.getElementById('helperIconPicker');
-      iconContainer.innerHTML = ICON_CATEGORIES.map(cat => `
-        <div>
-          <div class="text-[10px] font-bold text-slate-400 mb-1">${cat.category}</div>
-          <div class="grid grid-cols-4 gap-1.5">
-            ${cat.icons.map(item => `
-              <button type="button" data-icon="${item.icon}" class="helper-icon-btn py-1.5 px-1 rounded-xl border flex flex-col items-center justify-center gap-0.5 transition ${
-                tempHelperIcon === item.icon
-                  ? 'border-pink-500 bg-pink-50 text-pink-600 ring-2 ring-pink-200'
-                  : 'border-slate-200 bg-white text-slate-600'
-              }">
-                <span class="text-sm leading-none">${renderHelperIconHtml(item.icon)}</span>
-                <span class="text-[9px] font-medium truncate w-full text-center mt-0.5">${item.label}</span>
-              </button>
-            `).join('')}
-          </div>
-        </div>
-      `).join('');
-
-      const customEmojiInput = document.getElementById('customEmojiInput');
-      if (customEmojiInput) {
-        const iconStr = String(tempHelperIcon || '');
-        customEmojiInput.value = iconStr.startsWith('fa-') ? '' : iconStr;
-      }
-      updateHelperIconPreviewBadge();
-    }
-
-    function openHelperEditor(helperObj = null) {
-      const card = document.getElementById('helperEditorCard');
-      const title = document.getElementById('helperEditorTitle');
-      const idInput = document.getElementById('editingHelperId');
-      const nameInput = document.getElementById('helperNameInput');
-
-      if (helperObj) {
-        title.textContent = `編輯照顧者：${helperObj.name}`;
-        idInput.value = helperObj.id;
-        nameInput.value = helperObj.name;
-        tempHelperColor = helperObj.color;
-        tempHelperIcon = helperObj.icon;
-      } else {
-        title.textContent = '新增照顧者';
-        idInput.value = '';
-        nameInput.value = '';
-        tempHelperColor = HELPER_COLORS[helpers.length % HELPER_COLORS.length];
-        tempHelperIcon = '🐱';
-      }
-
-      renderHelperEditorPickers();
-      card.classList.remove('hidden');
-    }
-
-    function renderHelperManagerList() {
-      const list = document.getElementById('helperManagerList');
-      list.innerHTML = helpers.map((h, idx) => {
-        const iconStr = String(h.icon || '');
-        return `
-          <div class="p-3 rounded-2xl bg-slate-50 border border-slate-200/80 flex items-center justify-between">
-            <div class="flex items-center gap-2.5">
-              <span class="text-[11px] font-bold text-slate-400 w-4">${idx + 1}.</span>
-              <div class="w-9 h-9 rounded-xl flex items-center justify-center text-white text-sm shadow-xs" style="background:${h.color}">
-                ${renderHelperIconHtml(iconStr)}
-              </div>
-              <div>
-                <div class="text-xs font-extrabold text-slate-800">${h.name}</div>
-                <div class="text-[10px] text-slate-400">${iconStr.startsWith('fa-') ? '經典圖示' : 'Emoji 圖示'}</div>
-              </div>
-            </div>
-            <div class="flex items-center gap-1.5">
-              <button type="button" data-edit-helper="${h.id}" class="px-2.5 py-1 rounded-lg bg-white border border-slate-200 text-slate-600 text-[11px] font-bold hover:bg-slate-100">
-                編輯
-              </button>
-              <button type="button" data-delete-helper="${h.id}" class="px-2.5 py-1 rounded-lg bg-rose-50 border border-rose-200 text-rose-600 text-[11px] font-bold hover:bg-rose-100">
-                刪除
-              </button>
-            </div>
-          </div>
-        `;
-      }).join('');
-    }
-
-    function openHelperManagerModal() {
-      document.getElementById('helperEditorCard').classList.add('hidden');
-      renderHelperManagerList();
-      const modal = document.getElementById('helperManagerModal');
-      modal.classList.remove('hidden');
-      modal.classList.add('flex');
-    }
-
-    function closeHelperManagerModal() {
-      const modal = document.getElementById('helperManagerModal');
-      modal.classList.add('hidden');
-      modal.classList.remove('flex');
-    }
-
-    /**************************************************************
-     * 7. 月份切換、甘特圖日期切換、全螢幕與公告彈窗控制
-     **************************************************************/
-    function changeMonthByDelta(deltaMonths, swipeDirection = null) {
-      currentMonth += deltaMonths;
-      if (currentMonth < 0) {
-        currentMonth = 11;
-        currentYear--;
-      } else if (currentMonth > 11) {
-        currentMonth = 0;
-        currentYear++;
-      }
-      renderCalendar(swipeDirection);
-    }
-
-    function shiftSelectedDateByDays(deltaDays) {
-      const nextDateStr = addDaysToDateStr(selectedDateStr, deltaDays);
-      selectedDateStr = nextDateStr;
-      const [y, m] = nextDateStr.split('-').map(Number);
-      currentYear = y;
-      currentMonth = m - 1;
-      const direction = deltaDays > 0 ? 'left' : 'right';
-      refreshAllViews(direction);
-    }
-
-    function toggleFullScreenMode() {
-      const appShell = document.getElementById('appShell');
-      const bottomNav = document.getElementById('bottomNavBar');
-      const iconEl = document.getElementById('fullscreenIcon');
-
-      const doc = window.document;
-      const docEl = doc.documentElement;
-      const requestFullScreen = docEl.requestFullscreen || docEl.webkitRequestFullScreen || docEl.mozRequestFullScreen || docEl.msRequestFullscreen;
-      const exitFullScreen = doc.exitFullscreen || doc.webkitExitFullscreen || doc.mozCancelFullScreen || doc.msExitFullscreen;
-      const isNativeFull = doc.fullscreenElement || doc.webkitFullscreenElement || doc.mozFullScreenElement || doc.msFullscreenElement;
-
-      const isCurrentlyExpanded = appShell.classList.contains('expanded-fullscreen') || Boolean(isNativeFull);
-
-      if (!isCurrentlyExpanded) {
-        appShell.classList.add('expanded-fullscreen');
-        bottomNav.classList.remove('max-w-[430px]');
-        iconEl.classList.remove('fa-expand');
-        iconEl.classList.add('fa-compress');
-        if (requestFullScreen) {
-          try { requestFullScreen.call(docEl); } catch (e) {}
-        }
-      } else {
-        appShell.classList.remove('expanded-fullscreen');
-        bottomNav.classList.add('max-w-[430px]');
-        iconEl.classList.remove('fa-compress');
-        iconEl.classList.add('fa-expand');
-        if (isNativeFull && exitFullScreen) {
-          try { exitFullScreen.call(doc); } catch (e) {}
-        }
-      }
-      setTimeout(() => renderGanttChart(), 260);
-    }
-
-    function openAnnouncementModal() {
-      const modal = document.getElementById('announcementModal');
-      const input = document.getElementById('announcementInput');
-      input.value = announcementText;
-      modal.classList.remove('hidden');
-      modal.classList.add('flex');
-    }
-
-    function closeAnnouncementModal() {
-      const modal = document.getElementById('announcementModal');
-      modal.classList.add('hidden');
-      modal.classList.remove('flex');
-    }
-
-    /**************************************************************
-     * 8. 單次全域事件委派綁定
-     **************************************************************/
-    function bindGlobalEvents() {
-      let pressTimer = null;
-      let longPressTriggered = false;
-
-      const appShell = document.getElementById('appShell');
-
-      const clearPressTimer = () => {
-        if (pressTimer) {
-          clearTimeout(pressTimer);
-          pressTimer = null;
-        }
-      };
-
-      document.getElementById('fullscreenBtn').addEventListener('click', toggleFullScreenMode);
-
-      document.getElementById('announcementBar').addEventListener('click', openAnnouncementModal);
-      document.getElementById('navAnnouncementBtn').addEventListener('click', openAnnouncementModal);
-      document.getElementById('closeAnnouncementModalBtn').addEventListener('click', closeAnnouncementModal);
-      document.getElementById('saveAnnouncementBtn').addEventListener('click', () => {
-        const val = document.getElementById('announcementInput').value;
-        saveAnnouncement(val);
-        closeAnnouncementModal();
-      });
-      document.querySelectorAll('.announcement-tpl-btn').forEach(btn => {
-        btn.addEventListener('click', () => {
-          document.getElementById('announcementInput').value = btn.getAttribute('data-template');
-        });
-      });
-
-      appShell.addEventListener('pointerdown', (e) => {
-        const entryChip = e.target.closest('[data-entry-id]');
-        if (!entryChip) return;
-        const entryId = entryChip.getAttribute('data-entry-id');
-        longPressTriggered = false;
-        clearPressTimer();
-        pressTimer = setTimeout(() => {
-          longPressTriggered = true;
-          if (navigator.vibrate) navigator.vibrate(35);
-          openActionMenuForEntry(entryId);
-        }, 500);
-      });
-
-      appShell.addEventListener('pointerup', clearPressTimer);
-      appShell.addEventListener('pointerleave', clearPressTimer);
-      appShell.addEventListener('pointercancel', clearPressTimer);
-      appShell.addEventListener('contextmenu', (e) => {
-        if (e.target.closest('[data-entry-id]')) e.preventDefault();
-      });
-
-      document.getElementById('calendarGrid').addEventListener('click', (e) => {
-        if (longPressTriggered) {
-          longPressTriggered = false;
-          return;
-        }
-        const cell = e.target.closest('.day-cell');
-        if (!cell) return;
-        const dateStr = cell.getAttribute('data-date');
-        if (!isValidDateStr(dateStr)) return;
-        selectedDateStr = dateStr;
-        const [y, m] = dateStr.split('-').map(Number);
-        currentYear = y;
-        currentMonth = m - 1;
-        refreshAllViews();
-      });
-
-      const calendarSwipeContainer = document.getElementById('calendarSwipeContainer');
-      let calTouchStartX = 0;
-      let calTouchStartY = 0;
-
-      calendarSwipeContainer.addEventListener('touchstart', (e) => {
-        if (!e.touches || e.touches.length === 0) return;
-        calTouchStartX = e.touches[0].clientX;
-        calTouchStartY = e.touches[0].clientY;
-      }, { passive: true });
-
-      calendarSwipeContainer.addEventListener('touchend', (e) => {
-        if (!e.changedTouches || e.changedTouches.length === 0) return;
-        const dx = e.changedTouches[0].clientX - calTouchStartX;
-        const dy = e.changedTouches[0].clientY - calTouchStartY;
-        if (Math.abs(dx) > 45 && Math.abs(dx) > Math.abs(dy) * 1.3) {
-          clearPressTimer();
-          if (dx < 0) {
-            changeMonthByDelta(1, 'left');
-          } else {
-            changeMonthByDelta(-1, 'right');
-          }
-        }
-      }, { passive: true });
-
-      document.getElementById('helperLegendBar').addEventListener('click', (e) => {
-        const btn = e.target.closest('.helper-filter-btn');
-        if (!btn) return;
-        activeHelperFilter = btn.getAttribute('data-filter');
-        refreshAllViews();
-      });
-
-      document.getElementById('selectedDateQuickList').addEventListener('click', (e) => {
-        const btn = e.target.closest('.open-entry-action-btn');
-        if (!btn) return;
-        e.stopPropagation();
-        openActionMenuForEntry(btn.getAttribute('data-entry-id'));
-      });
-
-      document.getElementById('ganttPrevDayBtn').addEventListener('click', () => shiftSelectedDateByDays(-1));
-      document.getElementById('ganttNextDayBtn').addEventListener('click', () => shiftSelectedDateByDays(1));
-
-      const ganttSwipeArea = document.getElementById('ganttSwipeArea');
-      let touchStartX = 0;
-      let touchStartY = 0;
-
-      ganttSwipeArea.addEventListener('touchstart', (e) => {
-        if (!e.touches || e.touches.length === 0) return;
-        touchStartX = e.touches[0].clientX;
-        touchStartY = e.touches[0].clientY;
-      }, { passive: true });
-
-      ganttSwipeArea.addEventListener('touchend', (e) => {
-        if (!e.changedTouches || e.changedTouches.length === 0) return;
-        const dx = e.changedTouches[0].clientX - touchStartX;
-        const dy = e.changedTouches[0].clientY - touchStartY;
-        if (Math.abs(dx) > 42 && Math.abs(dx) > Math.abs(dy) * 1.3) {
-          clearPressTimer();
-          if (dx < 0) {
-            shiftSelectedDateByDays(1);
-          } else {
-            shiftSelectedDateByDays(-1);
-          }
-        }
-      }, { passive: true });
-
-      document.getElementById('prevMonthBtn').addEventListener('click', () => changeMonthByDelta(-1, 'right'));
-      document.getElementById('nextMonthBtn').addEventListener('click', () => changeMonthByDelta(1, 'left'));
-
-      document.getElementById('toggleWeekStartBtn').addEventListener('click', () => {
-        weekStartsOnMonday = !weekStartsOnMonday;
-        try {
-          localStorage.setItem(STORAGE_KEY_WEEKSTART, weekStartsOnMonday ? 'monday' : 'sunday');
-        } catch (e) {}
-        renderCalendar();
-      });
-
-      document.getElementById('todayBtn').addEventListener('click', () => {
-        const t = new Date();
-        currentYear = t.getFullYear();
-        currentMonth = t.getMonth();
-        selectedDateStr = formatDateKey(currentYear, currentMonth, t.getDate());
-        refreshAllViews();
-      });
-
-      document.getElementById('quickAddSelectedDateBtn').addEventListener('click', () => {
-        openShiftFormModal({ dateStr: selectedDateStr });
-      });
-      document.getElementById('fabAddShiftBtn').addEventListener('click', () => {
-        openShiftFormModal({ dateStr: selectedDateStr });
-      });
-      document.getElementById('navAddShiftBtn').addEventListener('click', () => {
-        openShiftFormModal({ dateStr: selectedDateStr });
-      });
-      document.getElementById('closeShiftFormModalBtn').addEventListener('click', closeShiftFormModal);
-
-      document.querySelectorAll('.shift-preset-btn').forEach(btn => {
-        btn.addEventListener('click', () => {
-          highlightShiftPresetButton(btn.getAttribute('data-shift'), true);
-        });
-      });
-
-      document.getElementById('fullDayQuickBtn').addEventListener('click', () => {
-        const sDate = document.getElementById('shiftStartDateInput').value || selectedDateStr;
-        document.getElementById('shiftStartDateInput').value = sDate;
-        document.getElementById('shiftEndDateInput').value = sDate;
-        document.getElementById('shiftStartInput').value = '00:00';
-        document.getElementById('shiftEndInput').value = '23:59';
-        highlightShiftPresetButton('morning', false);
-        updateOvernightBadge();
-      });
-
-      document.getElementById('shiftStartDateInput').addEventListener('change', (e) => {
-        const sDate = e.target.value;
-        const eDateInput = document.getElementById('shiftEndDateInput');
-        if (eDateInput.value < sDate) {
-          eDateInput.value = sDate;
-        }
-        updateOvernightBadge();
-      });
-
-      document.getElementById('shiftEndDateInput').addEventListener('change', updateOvernightBadge);
-
-      document.getElementById('shiftStartInput').addEventListener('change', () => {
-        const sTime = document.getElementById('shiftStartInput').value;
-        const eTime = document.getElementById('shiftEndInput').value;
-        const sDate = document.getElementById('shiftStartDateInput').value;
-        const eDate = document.getElementById('shiftEndDateInput').value;
-        if (sDate && eDate && sDate === eDate && eTime < sTime) {
-          document.getElementById('shiftEndDateInput').value = addDaysToDateStr(sDate, 1);
-          updateOvernightBadge();
-        }
-      });
-
-      document.getElementById('shiftEndInput').addEventListener('change', () => {
-        const sTime = document.getElementById('shiftStartInput').value;
-        const eTime = document.getElementById('shiftEndInput').value;
-        const sDate = document.getElementById('shiftStartDateInput').value;
-        const eDate = document.getElementById('shiftEndDateInput').value;
-        if (sDate && eDate && sDate === eDate && eTime < sTime) {
-          document.getElementById('shiftEndDateInput').value = addDaysToDateStr(sDate, 1);
-          updateOvernightBadge();
-        }
-      });
-
-      document.getElementById('addShiftForm').addEventListener('submit', (e) => {
-        e.preventDefault();
-        const editingId = document.getElementById('editingEntryId').value;
-        const startDate = document.getElementById('shiftStartDateInput').value;
-        let endDate = document.getElementById('shiftEndDateInput').value;
-        const checkedRadio = document.querySelector('input[name="helperId"]:checked');
-        const helperId = checkedRadio ? checkedRadio.value : (helpers[0] && helpers[0].id);
-        const start = document.getElementById('shiftStartInput').value;
-        const end = document.getElementById('shiftEndInput').value;
-
-        if (!helperId || !isValidDateStr(startDate) || !isValidDateStr(endDate)) return;
-
-        if (endDate < startDate) {
-          alert('結束日期不能早於開始日期！');
-          return;
-        }
-        if (getDaysDiff(startDate, endDate) > 60) {
-          alert('單次跨日排班請勿超過 60 天！');
-          return;
-        }
-        if (startDate === endDate && end < start) {
-          endDate = addDaysToDateStr(startDate, 1);
-        }
-
-        if (editingId) {
-          const idx = entries.findIndex(item => item.id === editingId);
-          if (idx > -1) {
-            entries[idx] = { ...entries[idx], startDate, endDate, helperId, shift: selectedShiftPreset, start, end };
-          }
-        } else {
-          entries.push({
-            id: 'entry_' + Date.now(),
-            startDate,
-            endDate,
-            helperId,
-            shift: selectedShiftPreset,
-            start,
-            end
-          });
-        }
-
-        selectedDateStr = startDate;
-        const [y, m] = startDate.split('-').map(Number);
-        currentYear = y;
-        currentMonth = m - 1;
-
-        saveEntries();
-        closeShiftFormModal();
-        refreshAllViews();
-      });
-
-      document.getElementById('cancelActionMenuBtn').addEventListener('click', closeActionMenu);
-      document.getElementById('editEntryBtn').addEventListener('click', () => {
-        if (!activeActionEntryId) return;
-        const idToEdit = activeActionEntryId;
-        closeActionMenu();
-        openShiftFormModal({ entryId: idToEdit });
-      });
-      document.getElementById('deleteEntryBtn').addEventListener('click', () => {
-        if (!activeActionEntryId) return;
-        entries = entries.filter(e => e.id !== activeActionEntryId);
-        saveEntries();
-        closeActionMenu();
-        refreshAllViews();
-      });
-
-      document.getElementById('openHelperModalBtn').addEventListener('click', openHelperManagerModal);
-      document.getElementById('navHelpersBtn').addEventListener('click', openHelperManagerModal);
-      document.getElementById('closeHelperModalBtn').addEventListener('click', closeHelperManagerModal);
-      document.getElementById('showNewHelperFormBtn').addEventListener('click', () => openHelperEditor(null));
-      document.getElementById('cancelHelperEditBtn').addEventListener('click', () => {
-        document.getElementById('helperEditorCard').classList.add('hidden');
-      });
-
-      document.getElementById('helperColorPicker').addEventListener('click', (e) => {
-        const btn = e.target.closest('.helper-color-btn');
-        if (!btn) return;
-        tempHelperColor = btn.getAttribute('data-color');
-        renderHelperEditorPickers();
-      });
-
-      document.getElementById('helperIconPicker').addEventListener('click', (e) => {
-        const btn = e.target.closest('.helper-icon-btn');
-        if (!btn) return;
-        tempHelperIcon = btn.getAttribute('data-icon');
-        renderHelperEditorPickers();
-      });
-
-      document.getElementById('customEmojiInput').addEventListener('input', (e) => {
-        const val = e.target.value.trim();
-        if (val) {
-          const emojis = Array.from(val);
-          tempHelperIcon = emojis.slice(0, 2).join('');
-          updateHelperIconPreviewBadge();
-        }
-      });
-
-      document.getElementById('saveHelperBtn').addEventListener('click', () => {
-        const id = document.getElementById('editingHelperId').value;
-        const name = document.getElementById('helperNameInput').value.trim();
-        if (!name) {
-          alert('請輸入照顧者稱呼！');
-          return;
-        }
-        if (id) {
-          const h = helpers.find(item => item.id === id);
-          if (h) {
-            h.name = name;
-            h.color = tempHelperColor;
-            h.icon = tempHelperIcon;
-          }
-        } else {
-          helpers.push({
-            id: 'h_' + Date.now(),
-            name,
-            color: tempHelperColor,
-            icon: tempHelperIcon
-          });
-        }
-        saveHelpers();
-        document.getElementById('helperEditorCard').classList.add('hidden');
-        renderHelperManagerList();
-        refreshAllViews();
-      });
-
-      document.getElementById('helperManagerList').addEventListener('click', (e) => {
-        const editBtn = e.target.closest('[data-edit-helper]');
-        if (editBtn) {
-          const h = helpers.find(item => item.id === editBtn.getAttribute('data-edit-helper'));
-          if (h) openHelperEditor(h);
-          return;
-        }
-        const delBtn = e.target.closest('[data-delete-helper]');
-        if (delBtn) {
-          if (helpers.length <= 1) {
-            alert('至少需保留一位照顧者！');
-            return;
-          }
-          const id = delBtn.getAttribute('data-delete-helper');
-          const target = helpers.find(item => item.id === id);
-          if (target && confirm(`確定要刪除「${target.name}」及其相關排班嗎？`)) {
-            helpers = helpers.filter(item => item.id !== id);
-            entries = entries.filter(e => e.helperId !== id);
-            if (activeHelperFilter === id) activeHelperFilter = 'ALL';
-            saveHelpers();
-            saveEntries();
-            renderHelperManagerList();
-            refreshAllViews();
-          }
-        }
-      });
-
-      document.getElementById('navCalendarBtn').addEventListener('click', () => {
-        closeShiftFormModal();
-        closeHelperManagerModal();
-        closeAnnouncementModal();
-      });
-
-      // 僅在螢幕寬度實際改變時才重新計算甘特圖，避免手機滑動網址列收合時造成卡頓
-      let lastWindowWidth = window.innerWidth;
-      let resizeTimer = null;
-      window.addEventListener('resize', () => {
-        if (window.innerWidth !== lastWindowWidth) {
-          lastWindowWidth = window.innerWidth;
-          if (resizeTimer) clearTimeout(resizeTimer);
-          resizeTimer = setTimeout(() => {
-            renderGanttChart();
-          }, 200);
-        }
-      });
-    }
-
-    // 啟動應用程式與雲端同步
-    checkPinVerification();
-    bindPinEvents();
-    bindGlobalEvents();
-    refreshAllViews();
-    initFirebaseCloudSync();
-  </script>
-</body>
-</html>
+        ? `當日照顧安排 · 今日 (${
