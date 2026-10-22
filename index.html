@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-  <title>BB 照顧排班日曆 v1.6</title>
+  <title>BB 照顧排班日曆 v1.7</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
   <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
@@ -123,7 +123,7 @@
           <div class="min-w-0">
             <div class="flex items-center gap-1">
               <h1 class="text-sm font-extrabold text-slate-800 tracking-tight leading-tight truncate">BB 照顧排班日曆</h1>
-              <span class="text-[9px] font-bold px-1 py-0.5 rounded bg-pink-100 text-pink-600 shrink-0">v1.6</span>
+              <span class="text-[9px] font-bold px-1 py-0.5 rounded bg-pink-100 text-pink-600 shrink-0">v1.7</span>
               <span id="cloudSyncBadge" class="inline-flex items-center gap-1 text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-slate-100 text-slate-500 border border-slate-200 shrink-0">
                 <span id="cloudSyncDot" class="w-1.5 h-1.5 rounded-full bg-slate-400"></span>
                 <span id="cloudSyncText">本機快取</span>
@@ -272,18 +272,21 @@
     </button>
 
     <!-- 底部導覽列 -->
-    <nav id="bottomNavBar" class="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-[430px] bg-white/95 backdrop-blur-md border-t border-slate-100 px-6 py-2 flex justify-around items-center z-20 text-xs">
+    <nav id="bottomNavBar" class="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-[430px] bg-white/95 backdrop-blur-md border-t border-slate-100 px-3 py-2 flex justify-around items-center z-20 text-xs">
       <button id="navCalendarBtn" type="button" class="flex flex-col items-center gap-0.5 text-pink-600 font-bold">
         <i class="fa-solid fa-calendar-days text-sm"></i><span class="text-[10px]">排班日曆</span>
       </button>
       <button id="navAddShiftBtn" type="button" class="flex flex-col items-center gap-0.5 text-slate-400 font-medium">
         <i class="fa-solid fa-plus-circle text-sm"></i><span class="text-[10px]">新增排班</span>
       </button>
+      <button id="navShiftPresetsBtn" type="button" class="flex flex-col items-center gap-0.5 text-slate-400 font-medium">
+        <i class="fa-solid fa-business-time text-sm"></i><span class="text-[10px]">更期設定</span>
+      </button>
       <button id="navAnnouncementBtn" type="button" class="flex flex-col items-center gap-0.5 text-slate-400 font-medium">
         <i class="fa-solid fa-bullhorn text-sm"></i><span class="text-[10px]">家庭公告</span>
       </button>
       <button id="navHelpersBtn" type="button" class="flex flex-col items-center gap-0.5 text-slate-400 font-medium">
-        <i class="fa-solid fa-face-smile text-sm"></i><span class="text-[10px]">照顧者設定</span>
+        <i class="fa-solid fa-face-smile text-sm"></i><span class="text-[10px]">照顧者</span>
       </button>
     </nav>
 
@@ -333,25 +336,23 @@
             <label class="block text-xs font-bold text-slate-700 mb-2">1. 選擇照顧者</label>
             <div id="helperRadioGrid" class="grid grid-cols-4 gap-2"></div>
           </div>
+
+          <!-- 動態更期分類按鈕 + 新增/修改更期入口 + 全日快捷按鈕 -->
           <div>
-            <div class="flex items-center justify-between mb-1.5">
-              <label class="block text-xs font-bold text-slate-700">2. 選擇更期分類 (點擊可快填時間)</label>
-              <button type="button" id="fullDayQuickBtn" class="text-[11px] font-extrabold text-white bg-gradient-to-r from-emerald-500 to-teal-500 px-3 py-1 rounded-full flex items-center gap-1 active:scale-95">
-                <i class="fa-solid fa-clock-rotate-left text-[10px]"></i><span>全日 (00:00–23:59)</span>
-              </button>
+            <div class="flex items-center justify-between mb-1.5 flex-wrap gap-1">
+              <label class="block text-xs font-bold text-slate-700">2. 選擇更期分類 (點擊自動填入時間)</label>
+              <div class="flex items-center gap-1.5">
+                <button type="button" id="openShiftPresetManagerFromFormBtn" class="text-[11px] font-bold text-indigo-600 bg-indigo-50 hover:bg-indigo-100 border border-indigo-200 px-2.5 py-1 rounded-full flex items-center gap-1 active:scale-95">
+                  <i class="fa-solid fa-sliders text-[10px]"></i><span>新增/修改更期</span>
+                </button>
+                <button type="button" id="fullDayQuickBtn" class="text-[11px] font-extrabold text-white bg-gradient-to-r from-emerald-500 to-teal-500 px-2.5 py-1 rounded-full flex items-center gap-1 active:scale-95">
+                  <i class="fa-solid fa-clock-rotate-left text-[10px]"></i><span>全日</span>
+                </button>
+              </div>
             </div>
-            <div class="grid grid-cols-3 gap-2">
-              <button type="button" data-shift="morning" class="shift-preset-btn py-2 px-2 rounded-xl border text-xs font-bold flex flex-col items-center gap-0.5">
-                <i class="fa-solid fa-sun text-amber-500 text-sm"></i><span>早更</span><span class="text-[9px] font-normal text-slate-400">06:00–11:59</span>
-              </button>
-              <button type="button" data-shift="afternoon" class="shift-preset-btn py-2 px-2 rounded-xl border text-xs font-bold flex flex-col items-center gap-0.5">
-                <i class="fa-solid fa-cloud-sun text-orange-500 text-sm"></i><span>午更</span><span class="text-[9px] font-normal text-slate-400">12:00–17:59</span>
-              </button>
-              <button type="button" data-shift="night" class="shift-preset-btn py-2 px-2 rounded-xl border text-xs font-bold flex flex-col items-center gap-0.5">
-                <i class="fa-solid fa-moon text-indigo-500 text-sm"></i><span>夜更</span><span class="text-[9px] font-normal text-slate-400">18:00–05:59</span>
-              </button>
-            </div>
+            <div id="shiftPresetButtonsGrid" class="grid grid-cols-3 gap-2"></div>
           </div>
+
           <div class="bg-slate-50 p-3 rounded-2xl border border-slate-200/80 space-y-3">
             <div class="flex items-center justify-between">
               <span class="text-xs font-bold text-slate-700">3. 設定開始與結束日期時間</span>
@@ -454,10 +455,63 @@
       </div>
     </div>
 
+    <!-- 彈窗 4：新增及修改更期設定 Modal (v1.7 新增) -->
+    <div id="shiftPresetManagerModal" class="fixed inset-0 z-50 bg-slate-900/50 hidden items-end justify-center">
+      <div class="bg-white w-full max-w-[430px] rounded-t-3xl p-5 max-h-[88dvh] overflow-y-auto shadow-2xl">
+        <div class="flex items-center justify-between pb-3 border-b border-slate-100">
+          <div>
+            <h3 class="text-base font-extrabold text-slate-800">更期設定 (新增及修改更期)</h3>
+            <p class="text-[11px] text-slate-400">可自由新增更期，或修改早更/午更/夜更的預設時間</p>
+          </div>
+          <button id="closeShiftPresetModalBtn" type="button" class="w-8 h-8 rounded-full bg-slate-100 text-slate-500 flex items-center justify-center">
+            <i class="fa-solid fa-xmark"></i>
+          </button>
+        </div>
+
+        <div class="mt-3">
+          <button id="showNewShiftPresetFormBtn" type="button" class="w-full py-2.5 rounded-xl border-2 border-dashed border-indigo-300 text-indigo-600 bg-indigo-50/50 font-bold text-xs flex items-center justify-center gap-1.5">
+            <i class="fa-solid fa-plus"></i><span>+ 新增自訂更期</span>
+          </button>
+        </div>
+
+        <!-- 新增/修改更期表單 -->
+        <div id="shiftPresetEditorCard" class="hidden mt-3 bg-slate-50 rounded-2xl p-3.5 border border-slate-200 space-y-3">
+          <div class="flex items-center justify-between">
+            <h4 id="shiftPresetEditorTitle" class="text-xs font-extrabold text-slate-700">新增更期</h4>
+            <button id="cancelShiftPresetEditBtn" type="button" class="text-[11px] text-slate-400">關閉</button>
+          </div>
+          <input type="hidden" id="editingShiftPresetId" value="" />
+          <div>
+            <label class="block text-[11px] font-bold text-slate-600 mb-1">更期名稱 (例如：早更、通宵更、傍晚更)</label>
+            <input id="shiftPresetLabelInput" type="text" placeholder="請輸入更期名稱" class="w-full rounded-xl border border-slate-200 bg-white px-3 py-1.5 text-xs font-bold text-slate-800" />
+          </div>
+          <div class="grid grid-cols-2 gap-2.5">
+            <div>
+              <label class="block text-[11px] font-bold text-slate-600 mb-1">預設開始時間</label>
+              <input id="shiftPresetStartInput" type="time" class="w-full rounded-xl border border-slate-200 bg-white px-2.5 py-1.5 text-xs font-bold text-slate-800" />
+            </div>
+            <div>
+              <label class="block text-[11px] font-bold text-slate-600 mb-1">預設結束時間</label>
+              <input id="shiftPresetEndInput" type="time" class="w-full rounded-xl border border-slate-200 bg-white px-2.5 py-1.5 text-xs font-bold text-slate-800" />
+            </div>
+          </div>
+          <div>
+            <label class="block text-[11px] font-bold text-slate-600 mb-1">選擇標籤樣式與圖示</label>
+            <div id="shiftPresetThemePicker" class="grid grid-cols-3 gap-1.5"></div>
+          </div>
+          <button id="saveShiftPresetBtn" type="button" class="w-full py-2.5 rounded-xl bg-indigo-600 text-white font-bold text-xs shadow-sm">
+            儲存更期設定
+          </button>
+        </div>
+
+        <!-- 現有更期列表 -->
+        <div id="shiftPresetManagerList" class="space-y-2.5 mt-4"></div>
+      </div>
+    </div>
+
   </div>
 
   <script>
-    // 全域安全綁定輔助函數，避免任何元素找不到而中斷程式
     function on(id, evt, fn, opts) {
       const el = document.getElementById(id);
       if (el) el.addEventListener(evt, fn, opts || false);
@@ -511,17 +565,29 @@
       { id: 'h7', name: '工人', icon: 'fa-hands-holding-child',  color: '#F97316' }
     ];
 
-    const SHIFT_META = {
-      morning:   { label: '早更', defaultStart: '06:00', defaultEnd: '11:59', badgeBg: '#FEF3C7', badgeText: '#B45309' },
-      afternoon: { label: '午更', defaultStart: '12:00', defaultEnd: '17:59', badgeBg: '#FFEDD5', badgeText: '#C2410C' },
-      night:     { label: '夜更', defaultStart: '18:00', defaultEnd: '05:59', badgeBg: '#E0E7FF', badgeText: '#4338CA' }
-    };
+    // 更期主題色與圖示選項
+    const SHIFT_THEMES = [
+      { id: 'amber',   name: '晨光黃', icon: 'fa-sun',        iconColor: 'text-amber-500',   badgeBg: '#FEF3C7', badgeText: '#B45309' },
+      { id: 'orange',  name: '暖陽橙', icon: 'fa-cloud-sun',  iconColor: 'text-orange-500',  badgeBg: '#FFEDD5', badgeText: '#C2410C' },
+      { id: 'indigo',  name: '星夜藍', icon: 'fa-moon',       iconColor: 'text-indigo-500',  badgeBg: '#E0E7FF', badgeText: '#4338CA' },
+      { id: 'emerald', name: '清新綠', icon: 'fa-clock',      iconColor: 'text-emerald-500', badgeBg: '#D1FAE5', badgeText: '#047857' },
+      { id: 'pink',    name: '溫馨粉', icon: 'fa-heart',      iconColor: 'text-pink-500',    badgeBg: '#FCE7F3', badgeText: '#BE185D' },
+      { id: 'purple',  name: '薰衣紫', icon: 'fa-star',       iconColor: 'text-purple-500',  badgeBg: '#F3E8FF', badgeText: '#6D28D9' }
+    ];
 
-    const STORAGE_KEY_HELPERS      = 'bb_care_helpers_v5_safe';
-    const STORAGE_KEY_ENTRIES      = 'bb_care_entries_v5_safe';
-    const STORAGE_KEY_WEEKSTART    = 'bb_care_weekstart_v5_safe';
-    const STORAGE_KEY_ANNOUNCEMENT = 'bb_care_announcement_v1';
-    const DEFAULT_ANNOUNCEMENT     = '🍼 歡迎使用 BB 照顧排班日曆！請各位家人及姐姐確認每日交接時間，辛苦晒大家！💕';
+    // 預設更期清單 (支援使用者新增、修改、刪除)
+    const DEFAULT_SHIFT_PRESETS = [
+      { id: 'morning',   label: '早更', defaultStart: '06:00', defaultEnd: '11:59', icon: 'fa-sun',       iconColor: 'text-amber-500',  badgeBg: '#FEF3C7', badgeText: '#B45309' },
+      { id: 'afternoon', label: '午更', defaultStart: '12:00', defaultEnd: '17:59', icon: 'fa-cloud-sun', iconColor: 'text-orange-500', badgeBg: '#FFEDD5', badgeText: '#C2410C' },
+      { id: 'night',     label: '夜更', defaultStart: '18:00', defaultEnd: '05:59', icon: 'fa-moon',      iconColor: 'text-indigo-500', badgeBg: '#E0E7FF', badgeText: '#4338CA' }
+    ];
+
+    const STORAGE_KEY_HELPERS       = 'bb_care_helpers_v5_safe';
+    const STORAGE_KEY_ENTRIES       = 'bb_care_entries_v5_safe';
+    const STORAGE_KEY_SHIFT_PRESETS = 'bb_care_shifts_v1';
+    const STORAGE_KEY_WEEKSTART     = 'bb_care_weekstart_v5_safe';
+    const STORAGE_KEY_ANNOUNCEMENT  = 'bb_care_announcement_v1';
+    const DEFAULT_ANNOUNCEMENT      = '🍼 歡迎使用 BB 照顧排班日曆！請各位家人及姐姐確認每日交接時間，辛苦晒大家！💕';
 
     const pad2 = n => String(n).padStart(2, '0');
     const formatDateKey = (y, m, d) => `${y}-${pad2(m + 1)}-${pad2(d)}`;
@@ -576,6 +642,14 @@
       return JSON.parse(JSON.stringify(DEFAULT_HELPERS));
     })();
 
+    let shiftPresets = (function() {
+      try {
+        const p = JSON.parse(localStorage.getItem(STORAGE_KEY_SHIFT_PRESETS));
+        if (Array.isArray(p) && p.length > 0 && p.every(s => s && s.id && s.label && s.defaultStart && s.defaultEnd)) return p;
+      } catch (e) {}
+      return JSON.parse(JSON.stringify(DEFAULT_SHIFT_PRESETS));
+    })();
+
     let entries = (function() {
       try {
         const p = JSON.parse(localStorage.getItem(STORAGE_KEY_ENTRIES));
@@ -601,10 +675,15 @@
       try { const s = localStorage.getItem(STORAGE_KEY_ANNOUNCEMENT); return (s && s.trim()) ? s.trim() : DEFAULT_ANNOUNCEMENT; } catch (e) { return DEFAULT_ANNOUNCEMENT; }
     })();
 
-    let selectedShiftPreset = 'morning';
+    let selectedShiftPreset = shiftPresets[0]?.id || 'morning';
     let activeActionEntryId = null;
     let tempHelperColor = HELPER_COLORS[0];
     let tempHelperIcon = '🐱';
+    let tempShiftThemeId = 'amber';
+
+    function getShiftPresetById(shiftId) {
+      return shiftPresets.find(s => s.id === shiftId) || shiftPresets[0] || DEFAULT_SHIFT_PRESETS[0];
+    }
 
     // Firebase 雲端同步
     const firebaseConfig = {
@@ -646,6 +725,7 @@
       syncDebounceTimer = setTimeout(() => {
         calendarDocRef.set({
           helpers: helpers,
+          shiftPresets: shiftPresets,
           entries: entries,
           announcementText: announcementText,
           updatedAtMs: Date.now()
@@ -665,6 +745,10 @@
               if (Array.isArray(d.helpers) && d.helpers.length > 0) {
                 helpers = d.helpers;
                 try { localStorage.setItem(STORAGE_KEY_HELPERS, JSON.stringify(helpers)); } catch (e) {}
+              }
+              if (Array.isArray(d.shiftPresets) && d.shiftPresets.length > 0) {
+                shiftPresets = d.shiftPresets.filter(s => s && s.id && s.label && s.defaultStart && s.defaultEnd);
+                try { localStorage.setItem(STORAGE_KEY_SHIFT_PRESETS, JSON.stringify(shiftPresets)); } catch (e) {}
               }
               if (Array.isArray(d.entries)) {
                 entries = d.entries.filter(e => e && e.id && e.helperId && isValidDateStr(e.startDate) && isValidDateStr(e.endDate));
@@ -689,6 +773,10 @@
 
     function saveHelpers() {
       try { localStorage.setItem(STORAGE_KEY_HELPERS, JSON.stringify(helpers)); } catch (e) {}
+      syncToCloud();
+    }
+    function saveShiftPresets() {
+      try { localStorage.setItem(STORAGE_KEY_SHIFT_PRESETS, JSON.stringify(shiftPresets)); } catch (e) {}
       syncToCloud();
     }
     function saveEntries() {
@@ -936,7 +1024,7 @@
       }
       listEl.innerHTML = dayEntries.map(entry => {
         const h = getHelperById(entry.helperId);
-        const sInfo = SHIFT_META[entry.shift] || SHIFT_META.morning;
+        const sInfo = getShiftPresetById(entry.shift);
         return `<div class="flex items-center justify-between p-2.5 rounded-xl bg-slate-50/90 border border-slate-100">
           <div class="flex items-center gap-2.5">
             <div class="w-9 h-9 rounded-xl flex items-center justify-center text-white text-sm cursor-pointer" data-entry-id="${entry.id}" style="background:${h.color}">
@@ -965,7 +1053,23 @@
       renderSelectedDateSummary();
     }
 
-    // 表單與彈窗邏輯
+    // 排班表單內動態渲染更期分類按鈕
+    function renderShiftPresetButtonsInForm() {
+      const grid = document.getElementById('shiftPresetButtonsGrid');
+      if (!grid) return;
+      grid.innerHTML = shiftPresets.map(s => {
+        const active = s.id === selectedShiftPreset;
+        const isOvernight = s.defaultEnd < s.defaultStart;
+        return `<button type="button" data-shift="${s.id}" class="shift-preset-btn py-2 px-1.5 rounded-xl border text-xs font-bold flex flex-col items-center gap-0.5 transition ${
+          active ? 'border-pink-500 bg-pink-50 text-pink-700 ring-1 ring-pink-300' : 'border-slate-200 bg-white text-slate-700'
+        }">
+          <i class="fa-solid ${s.icon || 'fa-clock'} ${s.iconColor || 'text-amber-500'} text-sm"></i>
+          <span class="truncate w-full text-center">${s.label}</span>
+          <span class="text-[9px] font-normal text-slate-400">${s.defaultStart}–${s.defaultEnd}${isOvernight ? ' (+1日)' : ''}</span>
+        </button>`;
+      }).join('');
+    }
+
     function renderHelperRadioGrid(selectedId) {
       const c = document.getElementById('helperRadioGrid');
       if (!c) return;
@@ -987,18 +1091,15 @@
     }
 
     function highlightShiftPresetButton(shiftKey, autofill = false) {
-      selectedShiftPreset = shiftKey;
-      document.querySelectorAll('.shift-preset-btn').forEach(btn => {
-        const active = btn.getAttribute('data-shift') === shiftKey;
-        btn.className = `shift-preset-btn py-2 px-2 rounded-xl border text-xs font-bold flex flex-col items-center gap-0.5 ${
-          active ? 'border-pink-500 bg-pink-50 text-pink-700' : 'border-slate-200 bg-white text-slate-700'
-        }`;
-      });
-      if (autofill && SHIFT_META[shiftKey]) {
+      const preset = getShiftPresetById(shiftKey);
+      selectedShiftPreset = preset.id;
+      renderShiftPresetButtonsInForm();
+      if (autofill && preset) {
         const sDate = document.getElementById('shiftStartDateInput').value || selectedDateStr;
-        document.getElementById('shiftStartInput').value = SHIFT_META[shiftKey].defaultStart;
-        document.getElementById('shiftEndInput').value = SHIFT_META[shiftKey].defaultEnd;
-        document.getElementById('shiftEndDateInput').value = shiftKey === 'night' ? addDaysToDateStr(sDate, 1) : sDate;
+        document.getElementById('shiftStartInput').value = preset.defaultStart;
+        document.getElementById('shiftEndInput').value = preset.defaultEnd;
+        const isOvernight = preset.defaultEnd < preset.defaultStart;
+        document.getElementById('shiftEndDateInput').value = isOvernight ? addDaysToDateStr(sDate, 1) : sDate;
         updateOvernightBadge();
       }
     }
@@ -1014,7 +1115,7 @@
         document.getElementById('shiftStartDateInput').value = e.startDate;
         document.getElementById('shiftEndDateInput').value = e.endDate;
         renderHelperRadioGrid(e.helperId);
-        highlightShiftPresetButton(e.shift || 'morning', false);
+        highlightShiftPresetButton(e.shift || shiftPresets[0]?.id, false);
         document.getElementById('shiftStartInput').value = e.start;
         document.getElementById('shiftEndInput').value = e.end;
       } else {
@@ -1024,7 +1125,7 @@
         document.getElementById('shiftStartDateInput').value = d;
         document.getElementById('shiftEndDateInput').value = d;
         renderHelperRadioGrid(helpers[0]?.id);
-        highlightShiftPresetButton('morning', true);
+        highlightShiftPresetButton(shiftPresets[0]?.id, true);
       }
       updateOvernightBadge();
       modal.classList.remove('hidden');
@@ -1036,12 +1137,74 @@
       if (m) { m.classList.add('hidden'); m.classList.remove('flex'); }
     }
 
+    // 更期管理 Modal (v1.7 新增及修改更期功能)
+    function renderShiftPresetThemePicker() {
+      const container = document.getElementById('shiftPresetThemePicker');
+      if (!container) return;
+      container.innerHTML = SHIFT_THEMES.map(t => `<button type="button" data-theme-id="${t.id}" class="shift-theme-btn py-1.5 px-2 rounded-xl border text-[11px] font-bold flex items-center justify-center gap-1.5 ${
+        tempShiftThemeId === t.id ? 'ring-2 ring-indigo-500 border-indigo-500' : 'border-slate-200'
+      }" style="background:${t.badgeBg};color:${t.badgeText}">
+        <i class="fa-solid ${t.icon}"></i><span>${t.name}</span>
+      </button>`).join('');
+    }
+
+    function openShiftPresetEditor(presetObj = null) {
+      const card = document.getElementById('shiftPresetEditorCard');
+      document.getElementById('shiftPresetEditorTitle').textContent = presetObj ? `修改更期：${presetObj.label}` : '新增自訂更期';
+      document.getElementById('editingShiftPresetId').value = presetObj ? presetObj.id : '';
+      document.getElementById('shiftPresetLabelInput').value = presetObj ? presetObj.label : '';
+      document.getElementById('shiftPresetStartInput').value = presetObj ? presetObj.defaultStart : '08:00';
+      document.getElementById('shiftPresetEndInput').value = presetObj ? presetObj.defaultEnd : '14:00';
+
+      const matchedTheme = presetObj ? SHIFT_THEMES.find(t => t.badgeBg === presetObj.badgeBg) : null;
+      tempShiftThemeId = matchedTheme ? matchedTheme.id : SHIFT_THEMES[shiftPresets.length % SHIFT_THEMES.length].id;
+      renderShiftPresetThemePicker();
+      card.classList.remove('hidden');
+    }
+
+    function renderShiftPresetManagerList() {
+      const list = document.getElementById('shiftPresetManagerList');
+      if (!list) return;
+      list.innerHTML = shiftPresets.map((s, i) => {
+        const isOvernight = s.defaultEnd < s.defaultStart;
+        return `<div class="p-3 rounded-2xl bg-slate-50 border border-slate-200/80 flex items-center justify-between">
+          <div class="flex items-center gap-2.5">
+            <span class="text-[11px] font-bold text-slate-400 w-4">${i + 1}.</span>
+            <span class="px-2.5 py-1 rounded-xl text-xs font-extrabold flex items-center gap-1.5" style="background:${s.badgeBg};color:${s.badgeText}">
+              <i class="fa-solid ${s.icon || 'fa-clock'}"></i><span>${s.label}</span>
+            </span>
+            <div class="text-xs font-bold text-slate-600">
+              ${s.defaultStart} – ${s.defaultEnd}
+              ${isOvernight ? '<span class="text-[10px] text-indigo-600 font-bold ml-1">(跨日)</span>' : ''}
+            </div>
+          </div>
+          <div class="flex items-center gap-1.5">
+            <button type="button" data-edit-shift="${s.id}" class="px-2.5 py-1 rounded-lg bg-white border border-slate-200 text-slate-600 text-[11px] font-bold">修改</button>
+            <button type="button" data-delete-shift="${s.id}" class="px-2.5 py-1 rounded-lg bg-rose-50 border border-rose-200 text-rose-600 text-[11px] font-bold">刪除</button>
+          </div>
+        </div>`;
+      }).join('');
+    }
+
+    function openShiftPresetManagerModal() {
+      document.getElementById('shiftPresetEditorCard').classList.add('hidden');
+      renderShiftPresetManagerList();
+      const m = document.getElementById('shiftPresetManagerModal');
+      m.classList.remove('hidden');
+      m.classList.add('flex');
+    }
+
+    function closeShiftPresetManagerModal() {
+      const m = document.getElementById('shiftPresetManagerModal');
+      if (m) { m.classList.add('hidden'); m.classList.remove('flex'); }
+    }
+
     function openActionMenuForEntry(entryId) {
       const e = entries.find(x => x.id === entryId);
       if (!e) return;
       activeActionEntryId = entryId;
       const h = getHelperById(e.helperId);
-      const sInfo = SHIFT_META[e.shift] || SHIFT_META.morning;
+      const sInfo = getShiftPresetById(e.shift);
       const badge = document.getElementById('actionMenuHelperBadge');
       badge.style.background = h.color;
       badge.innerHTML = renderHelperIconHtml(h.icon);
@@ -1125,7 +1288,6 @@
       refreshAllViews(delta > 0 ? 'left' : 'right');
     }
 
-    // PIN 驗證邏輯
     function checkPinVerification() {
       let ok = false;
       try { ok = localStorage.getItem(PIN_STORAGE_KEY) === 'true'; } catch (e) {}
@@ -1162,11 +1324,11 @@
       }
     }
 
-    // 先執行一次完整畫面渲染，確保日曆與甘特圖立即顯示
+    // 初始渲染
     refreshAllViews();
     checkPinVerification();
 
-    // 綁定所有互動事件
+    // 事件綁定
     document.querySelectorAll('.pin-key').forEach(btn => btn.addEventListener('click', () => handlePinDigit(btn.getAttribute('data-pin-key'))));
     on('pinClearBtn', 'click', () => { currentPinInput = ''; updatePinDots(); });
     on('pinBackspaceBtn', 'click', () => { currentPinInput = currentPinInput.slice(0, -1); updatePinDots(); });
@@ -1212,7 +1374,6 @@
       document.getElementById('announcementInput').value = b.getAttribute('data-template');
     }));
 
-    // 長按手勢與點擊日曆
     let pressTimer = null;
     let longPressTriggered = false;
     const clearPress = () => { if (pressTimer) { clearTimeout(pressTimer); pressTimer = null; } };
@@ -1245,7 +1406,6 @@
       refreshAllViews();
     });
 
-    // 日曆左右滑動切換月份
     let calSX = 0, calSY = 0;
     on('calendarSwipeContainer', 'touchstart', e => { if (e.touches?.[0]) { calSX = e.touches[0].clientX; calSY = e.touches[0].clientY; } }, { passive: true });
     on('calendarSwipeContainer', 'touchend', e => {
@@ -1258,7 +1418,6 @@
       }
     }, { passive: true });
 
-    // 甘特圖左右滑動切換日期
     let gSX = 0, gSY = 0;
     on('ganttSwipeArea', 'touchstart', e => { if (e.touches?.[0]) { gSX = e.touches[0].clientX; gSY = e.touches[0].clientY; } }, { passive: true });
     on('ganttSwipeArea', 'touchend', e => {
@@ -1304,7 +1463,11 @@
     on('navAddShiftBtn', 'click', () => openShiftFormModal({ dateStr: selectedDateStr }));
     on('closeShiftFormModalBtn', 'click', closeShiftFormModal);
 
-    document.querySelectorAll('.shift-preset-btn').forEach(b => b.addEventListener('click', () => highlightShiftPresetButton(b.getAttribute('data-shift'), true)));
+    // 動態更期按鈕事件委派
+    on('shiftPresetButtonsGrid', 'click', e => {
+      const b = e.target.closest('.shift-preset-btn');
+      if (b) highlightShiftPresetButton(b.getAttribute('data-shift'), true);
+    });
 
     on('fullDayQuickBtn', 'click', () => {
       const s = document.getElementById('shiftStartDateInput').value || selectedDateStr;
@@ -1312,8 +1475,83 @@
       document.getElementById('shiftEndDateInput').value = s;
       document.getElementById('shiftStartInput').value = '00:00';
       document.getElementById('shiftEndInput').value = '23:59';
-      highlightShiftPresetButton('morning', false);
       updateOvernightBadge();
+    });
+
+    // 更期管理 Modal 事件綁定
+    on('navShiftPresetsBtn', 'click', openShiftPresetManagerModal);
+    on('openShiftPresetManagerFromFormBtn', 'click', openShiftPresetManagerModal);
+    on('closeShiftPresetModalBtn', 'click', closeShiftPresetManagerModal);
+    on('showNewShiftPresetFormBtn', 'click', () => openShiftPresetEditor(null));
+    on('cancelShiftPresetEditBtn', 'click', () => document.getElementById('shiftPresetEditorCard').classList.add('hidden'));
+
+    on('shiftPresetThemePicker', 'click', e => {
+      const b = e.target.closest('.shift-theme-btn');
+      if (b) { tempShiftThemeId = b.getAttribute('data-theme-id'); renderShiftPresetThemePicker(); }
+    });
+
+    on('saveShiftPresetBtn', 'click', () => {
+      const id = document.getElementById('editingShiftPresetId').value;
+      const label = document.getElementById('shiftPresetLabelInput').value.trim();
+      const defaultStart = document.getElementById('shiftPresetStartInput').value;
+      const defaultEnd = document.getElementById('shiftPresetEndInput').value;
+      if (!label) return alert('請輸入更期名稱！');
+      if (!defaultStart || !defaultEnd) return alert('請設定預設開始與結束時間！');
+
+      const theme = SHIFT_THEMES.find(t => t.id === tempShiftThemeId) || SHIFT_THEMES[0];
+      if (id) {
+        const s = shiftPresets.find(x => x.id === id);
+        if (s) {
+          s.label = label;
+          s.defaultStart = defaultStart;
+          s.defaultEnd = defaultEnd;
+          s.icon = theme.icon;
+          s.iconColor = theme.iconColor;
+          s.badgeBg = theme.badgeBg;
+          s.badgeText = theme.badgeText;
+        }
+      } else {
+        const newId = 'shift_' + Date.now();
+        shiftPresets.push({
+          id: newId,
+          label,
+          defaultStart,
+          defaultEnd,
+          icon: theme.icon,
+          iconColor: theme.iconColor,
+          badgeBg: theme.badgeBg,
+          badgeText: theme.badgeText
+        });
+        selectedShiftPreset = newId;
+      }
+      saveShiftPresets();
+      document.getElementById('shiftPresetEditorCard').classList.add('hidden');
+      renderShiftPresetManagerList();
+      renderShiftPresetButtonsInForm();
+      refreshAllViews();
+    });
+
+    on('shiftPresetManagerList', 'click', e => {
+      const eb = e.target.closest('[data-edit-shift]');
+      if (eb) {
+        const s = shiftPresets.find(x => x.id === eb.getAttribute('data-edit-shift'));
+        if (s) openShiftPresetEditor(s);
+        return;
+      }
+      const db = e.target.closest('[data-delete-shift]');
+      if (db) {
+        if (shiftPresets.length <= 1) return alert('至少需保留一個更期分類！');
+        const id = db.getAttribute('data-delete-shift');
+        const target = shiftPresets.find(x => x.id === id);
+        if (target && confirm(`確定要刪除「${target.label}」更期嗎？`)) {
+          shiftPresets = shiftPresets.filter(x => x.id !== id);
+          if (selectedShiftPreset === id) selectedShiftPreset = shiftPresets[0].id;
+          saveShiftPresets();
+          renderShiftPresetManagerList();
+          renderShiftPresetButtonsInForm();
+          refreshAllViews();
+        }
+      }
     });
 
     on('shiftStartDateInput', 'change', e => {
@@ -1451,6 +1689,7 @@
       closeShiftFormModal();
       closeHelperModal();
       closeAnnModal();
+      closeShiftPresetManagerModal();
     });
 
     initFirebaseCloudSync();
