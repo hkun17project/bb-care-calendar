@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-  <title>BB 照顧排班日曆 v1.8</title>
+  <title>BB 照顧排班日曆 v1.9</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
   <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
@@ -48,42 +48,20 @@
     .gantt-label-col { width: 74px; flex-shrink: 0; padding-right: 6px; }
     .gantt-track-col { flex: 1; position: relative; min-width: 0; }
     .gantt-rows-wrapper { position: relative; width: 100%; }
-    /* 連貫整片式時間軸底層：由第一位指定照顧者頂部一直延伸至最後一位底部 */
     .gantt-unified-backdrop {
-      position: absolute;
-      left: 74px;
-      right: 0;
-      top: 0;
-      bottom: 0;
-      background: #F1F5F9;
-      border-radius: 8px;
-      border: 1px solid #E2E8F0;
-      overflow: hidden;
-      pointer-events: none;
-      z-index: 1;
+      position: absolute; left: 74px; right: 0; top: 0; bottom: 0;
+      background: #F1F5F9; border-radius: 8px; border: 1px solid #E2E8F0;
+      overflow: hidden; pointer-events: none; z-index: 1;
     }
     .gantt-night-zone {
-      position: absolute;
-      top: 0;
-      bottom: 0;
-      background-color: rgba(30, 58, 138, 0.5);
-      pointer-events: none;
-      z-index: 1;
+      position: absolute; top: 0; bottom: 0;
+      background-color: rgba(30, 58, 138, 0.5); pointer-events: none; z-index: 1;
     }
     .gantt-grid-line {
-      position: absolute;
-      top: 0;
-      bottom: 0;
-      width: 1px;
-      border-left: 1px dashed rgba(100, 116, 139, 0.35);
-      pointer-events: none;
-      z-index: 2;
+      position: absolute; top: 0; bottom: 0; width: 1px;
+      border-left: 1px dashed rgba(100, 116, 139, 0.35); pointer-events: none; z-index: 2;
     }
-    .gantt-row-lane {
-      height: 28px;
-      position: relative;
-      width: 100%;
-    }
+    .gantt-row-lane { height: 28px; position: relative; width: 100%; }
     .gantt-row-grid:not(:last-child) .gantt-row-lane {
       border-bottom: 1px solid rgba(203, 213, 225, 0.45);
     }
@@ -103,6 +81,27 @@
       78%, 92% { transform: translateX(var(--roll-offset, -45%)); }
       100% { transform: translateX(0%); }
     }
+
+    /* 照顧者設定上下拖曳排序樣式 */
+    .helper-drag-handle {
+      touch-action: none;
+      cursor: grab;
+    }
+    .helper-drag-handle:active {
+      cursor: grabbing;
+    }
+    .helper-item-row {
+      transition: transform 0.12s ease, box-shadow 0.12s ease, background-color 0.12s ease;
+    }
+    .helper-item-row.dragging-helper-row {
+      background-color: #FDF2F8 !important;
+      border-color: #EC4899 !important;
+      box-shadow: 0 8px 20px rgba(236, 72, 153, 0.22);
+      transform: scale(1.02);
+      z-index: 20;
+      position: relative;
+    }
+
     @keyframes slideLeftAnim { 0% { opacity: 0.35; transform: translateX(18px); } 100% { opacity: 1; transform: translateX(0); } }
     @keyframes slideRightAnim { 0% { opacity: 0.35; transform: translateX(-18px); } 100% { opacity: 1; transform: translateX(0); } }
     .swipe-anim-left { animation: slideLeftAnim 0.22s ease-out; }
@@ -162,7 +161,7 @@
           <div class="min-w-0">
             <div class="flex items-center gap-1">
               <h1 class="text-sm font-extrabold text-slate-800 tracking-tight leading-tight truncate">BB 照顧排班日曆</h1>
-              <span class="text-[9px] font-bold px-1 py-0.5 rounded bg-pink-100 text-pink-600 shrink-0">v1.8</span>
+              <span class="text-[9px] font-bold px-1 py-0.5 rounded bg-pink-100 text-pink-600 shrink-0">v1.9</span>
               <span id="cloudSyncBadge" class="inline-flex items-center gap-1 text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-slate-100 text-slate-500 border border-slate-200 shrink-0">
                 <span id="cloudSyncDot" class="w-1.5 h-1.5 rounded-full bg-slate-400"></span>
                 <span id="cloudSyncText">本機快取</span>
@@ -377,7 +376,6 @@
             <div id="helperRadioGrid" class="grid grid-cols-4 gap-2"></div>
           </div>
 
-          <!-- 動態更期分類按鈕 + 新增/修改更期入口 + 全日快捷按鈕 -->
           <div>
             <div class="flex items-center justify-between mb-1.5 flex-wrap gap-1">
               <label class="block text-xs font-bold text-slate-700">2. 選擇更期分類 (點擊自動填入時間)</label>
@@ -447,13 +445,13 @@
       </div>
     </div>
 
-    <!-- 彈窗 3：照顧者管理及喜愛圖示設定 -->
+    <!-- 彈窗 3：照顧者管理及喜愛圖示設定 (v1.9 支援手動上下拖動排序) -->
     <div id="helperManagerModal" class="fixed inset-0 z-50 bg-slate-900/50 hidden items-end justify-center">
       <div class="bg-white w-full max-w-[430px] rounded-t-3xl p-5 max-h-[88dvh] overflow-y-auto shadow-2xl">
         <div class="flex items-center justify-between pb-3 border-b border-slate-100">
           <div>
-            <h3 class="text-base font-extrabold text-slate-800">照顧者及專屬圖示設定</h3>
-            <p class="text-[11px] text-slate-400">可揀選 Emoji、人物或動物圖示，或新增/刪除照顧者</p>
+            <h3 class="text-base font-extrabold text-slate-800">照顧者設定及排序</h3>
+            <p class="text-[11px] text-slate-400">按住左側 <i class="fa-solid fa-grip-lines text-slate-500 mx-0.5"></i> 上下拖動可調整日曆圖示排列次序</p>
           </div>
           <button id="closeHelperModalBtn" type="button" class="w-8 h-8 rounded-full bg-slate-100 text-slate-500 flex items-center justify-center">
             <i class="fa-solid fa-xmark"></i>
@@ -494,7 +492,7 @@
           </div>
           <button id="saveHelperBtn" type="button" class="w-full py-2 rounded-xl bg-pink-500 text-white font-bold text-xs">儲存照顧者資料</button>
         </div>
-        <div id="helperManagerList" class="space-y-2.5 mt-4"></div>
+        <div id="helperManagerList" class="space-y-2 mt-4"></div>
       </div>
     </div>
 
@@ -731,39 +729,25 @@
       return shiftPresets.find(s => s.id === shiftId) || shiftPresets[0] || DEFAULT_SHIFT_PRESETS[0];
     }
 
-    /**
-     * 智慧型更期標籤判斷 (v1.8 核心更新)：
-     * 1. 若該排班的開始與結束時間完全符合所選預設更期，或符合任何一個預設更期，則顯示該預設更期標籤。
-     * 2. 若不符合任何預設更期時間，則根據排班的「開始時間 (entry.start)」自動歸類為：
-     *    - 早更 (06:00 - 11:59)
-     *    - 午更 (12:00 - 17:59)
-     *    - 夜更 (18:00 - 05:59)
-     */
     function resolveEntryShiftBadge(entry) {
       if (!entry) return { label: '早更', badgeBg: '#FEF3C7', badgeText: '#B45309' };
 
-      // 1. 檢查是否與原本記錄的預設更期時間完全吻合
       const assignedPreset = shiftPresets.find(s => s.id === entry.shift);
       if (assignedPreset && assignedPreset.defaultStart === entry.start && assignedPreset.defaultEnd === entry.end) {
         return assignedPreset;
       }
 
-      // 2. 檢查是否與清單中任何一個預設更期的開始與結束時間完全吻合
       const exactMatchPreset = shiftPresets.find(s => s.defaultStart === entry.start && s.defaultEnd === entry.end);
       if (exactMatchPreset) {
         return exactMatchPreset;
       }
 
-      // 3. 若不符合任何預設更期時間，根據開始時間自動判斷「早更 / 午更 / 夜更」
       const startMin = timeToMinutes(entry.start);
       if (startMin >= 360 && startMin <= 719) {
-        // 06:00 - 11:59
         return { label: '早更', badgeBg: '#FEF3C7', badgeText: '#B45309' };
       } else if (startMin >= 720 && startMin <= 1079) {
-        // 12:00 - 17:59
         return { label: '午更', badgeBg: '#FFEDD5', badgeText: '#C2410C' };
       } else {
-        // 18:00 - 05:59
         return { label: '夜更', badgeBg: '#E0E7FF', badgeText: '#4338CA' };
       }
     }
@@ -842,6 +826,10 @@
                 try { localStorage.setItem(STORAGE_KEY_ANNOUNCEMENT, announcementText); } catch (e) {}
               }
               refreshAllViews();
+              const helperModal = document.getElementById('helperManagerModal');
+              if (helperModal && !helperModal.classList.contains('hidden') && !draggingHelperRow) {
+                renderHelperManagerList();
+              }
             }
             updateCloudBadgeUI('synced');
           } else if (doc && !doc.metadata.fromCache && !hasAttemptedInitialSeed) {
@@ -938,6 +926,9 @@
       bar.innerHTML = html;
     }
 
+    /**
+     * 渲染月曆 (v1.9 更新：同一日內每位照顧者圖示只顯示一次，並嚴格按照「照顧者設定」內的清單次序排列)
+     */
     function renderCalendar(monthSwipeDirection = null) {
       const headerEl = document.getElementById('weekdayHeader');
       const toggleLabel = document.getElementById('weekStartLabel');
@@ -989,11 +980,19 @@
         const [cy, cm, cd] = cell.dateStr.split('-').map(Number);
         const dow = new Date(cy, cm - 1, cd).getDay();
         const numCol = isToday ? 'text-pink-600 font-extrabold' : (dow === 0 ? 'text-rose-500' : (dow === 6 ? 'text-sky-600' : 'text-slate-700'));
-        const sz = dayEntries.length <= 2 ? 'chip-size-normal' : (dayEntries.length <= 4 ? 'chip-size-sm' : (dayEntries.length <= 6 ? 'chip-size-xs' : 'chip-size-xxs'));
-        const iconsHtml = dayEntries.map(e => {
-          const h = getHelperById(e.helperId);
-          return `<span class="helper-chip ${sz}" data-entry-id="${e.id}" style="background:${h.color};">${renderHelperIconHtml(h.icon)}</span>`;
+
+        // 按「照顧者設定」清單 (helpers) 的順序篩選出當日有排班的照顧者（每位照顧者在同一日只出現一次）
+        const uniqueOrderedHelpers = helpers.filter(h => dayEntries.some(e => e.helperId === h.id));
+
+        const sz = uniqueOrderedHelpers.length <= 2
+          ? 'chip-size-normal'
+          : (uniqueOrderedHelpers.length <= 4 ? 'chip-size-sm' : (uniqueOrderedHelpers.length <= 6 ? 'chip-size-xs' : 'chip-size-xxs'));
+
+        const iconsHtml = uniqueOrderedHelpers.map(h => {
+          const firstEntry = dayEntries.find(e => e.helperId === h.id);
+          return `<span class="helper-chip ${sz}" data-entry-id="${firstEntry ? firstEntry.id : ''}" style="background:${h.color};">${renderHelperIconHtml(h.icon)}</span>`;
         }).join('');
+
         return `<div class="day-cell ${!cell.inMonth ? 'other-month' : ''} ${isToday ? 'today' : ''} ${isSel ? 'selected' : ''}" data-date="${cell.dateStr}">
           <div class="flex items-center justify-between px-0.5 shrink-0"><span class="text-[11px] font-bold leading-none ${numCol}">${cell.dayNum}</span><span class="w-1.5 h-1.5 rounded-full ${dot}"></span></div>
           <div class="flex flex-wrap items-center justify-center content-center gap-0.5 my-auto overflow-hidden py-0.5">${iconsHtml}</div>
@@ -1002,9 +1001,6 @@
       }).join('');
     }
 
-    /**
-     * 渲染當日照顧時間軸 (v1.8 連貫式深藍色夜間區間：由第一位指定照顧者頂部連貫延伸至最後一位底部)
-     */
     function renderGanttChart(swipeDirection = null) {
       const ganttBody = document.getElementById('ganttBody');
       const ganttDateTitle = document.getElementById('ganttDateTitle');
@@ -1035,16 +1031,15 @@
       }
 
       const dayEntries = getEntriesForDate(selectedDateStr);
-      const ids = [];
-      dayEntries.forEach(e => { if (!ids.includes(e.helperId)) ids.push(e.helperId); });
+      // 甘特圖 Y 軸同樣按照「照顧者設定」清單次序排列當日指定照顧者
+      const designatedHelpers = helpers.filter(h => dayEntries.some(e => e.helperId === h.id));
 
-      if (ids.length === 0) {
+      if (designatedHelpers.length === 0) {
         ganttBody.innerHTML = '<div class="text-center py-4 text-slate-400 text-xs">當日暫無指定照顧者排班（左右滑動可切換日期）</div>';
         return;
       }
 
-      const rowsHtml = ids.map(id => {
-        const h = getHelperById(id);
+      const rowsHtml = designatedHelpers.map(h => {
         const hEntries = dayEntries.filter(e => e.helperId === h.id);
         const barsHtml = hEntries.map(entry => {
           return getSegmentsForDate(entry, selectedDateStr).map(([sMin, eMin]) => {
@@ -1069,7 +1064,6 @@
         </div>`;
       }).join('');
 
-      // 使用統一連貫的底層區間 (.gantt-unified-backdrop)，讓深藍色夜間時段由第一位照顧者頂部一直連貫延伸至最後一位底部
       ganttBody.innerHTML = `
         <div class="gantt-rows-wrapper">
           <div class="gantt-unified-backdrop">
@@ -1344,13 +1338,19 @@
       document.getElementById('helperEditorCard').classList.remove('hidden');
     }
 
+    /**
+     * 渲染照顧者設定清單 (v1.9 加入左側上下拖動手柄 .helper-drag-handle)
+     */
     function renderHelperManagerList() {
       const list = document.getElementById('helperManagerList');
       if (!list) return;
-      list.innerHTML = helpers.map((h, i) => `<div class="p-3 rounded-2xl bg-slate-50 border border-slate-200/80 flex items-center justify-between">
-        <div class="flex items-center gap-2.5">
-          <span class="text-[11px] font-bold text-slate-400 w-4">${i + 1}.</span>
-          <div class="w-9 h-9 rounded-xl flex items-center justify-center text-white text-sm" style="background:${h.color}">${renderHelperIconHtml(h.icon)}</div>
+      list.innerHTML = helpers.map((h, i) => `<div class="helper-item-row p-2.5 rounded-2xl bg-slate-50 border border-slate-200/80 flex items-center justify-between" data-helper-id="${h.id}">
+        <div class="flex items-center gap-2">
+          <div class="helper-drag-handle w-7 h-8 rounded-lg flex items-center justify-center text-slate-400 hover:text-pink-500 active:text-pink-600" title="按住上下拖動排序">
+            <i class="fa-solid fa-grip-lines text-sm"></i>
+          </div>
+          <span class="helper-order-num text-[11px] font-bold text-slate-400 w-4">${i + 1}.</span>
+          <div class="w-9 h-9 rounded-xl flex items-center justify-center text-white text-sm shadow-2xs" style="background:${h.color}">${renderHelperIconHtml(h.icon)}</div>
           <div class="text-xs font-extrabold text-slate-800">${h.name}</div>
         </div>
         <div class="flex items-center gap-1.5">
@@ -1468,12 +1468,14 @@
     on('appShell', 'pointerdown', e => {
       const chip = e.target.closest('[data-entry-id]');
       if (!chip) return;
+      const entryId = chip.getAttribute('data-entry-id');
+      if (!entryId) return;
       longPressTriggered = false;
       clearPress();
       pressTimer = setTimeout(() => {
         longPressTriggered = true;
         if (navigator.vibrate) navigator.vibrate(35);
-        openActionMenuForEntry(chip.getAttribute('data-entry-id'));
+        openActionMenuForEntry(entryId);
       }, 500);
     });
     on('appShell', 'pointerup', clearPress);
@@ -1745,6 +1747,63 @@
       renderHelperManagerList();
       refreshAllViews();
     });
+
+    // 照顧者設定清單：手動上下拖動排序 (Pointer Events 同時支援手機觸控與電腦滑鼠)
+    let draggingHelperRow = null;
+
+    on('helperManagerList', 'pointerdown', e => {
+      const handle = e.target.closest('.helper-drag-handle');
+      if (!handle) return;
+      const row = handle.closest('.helper-item-row');
+      if (!row) return;
+      e.preventDefault();
+      draggingHelperRow = row;
+      row.classList.add('dragging-helper-row');
+      if (navigator.vibrate) navigator.vibrate(20);
+      if (handle.setPointerCapture) {
+        try { handle.setPointerCapture(e.pointerId); } catch (err) {}
+      }
+    });
+
+    on('helperManagerList', 'pointermove', e => {
+      if (!draggingHelperRow) return;
+      e.preventDefault();
+      const list = document.getElementById('helperManagerList');
+      if (!list) return;
+      const siblings = [...list.querySelectorAll('.helper-item-row:not(.dragging-helper-row)')];
+      const nextSibling = siblings.find(sib => {
+        const rect = sib.getBoundingClientRect();
+        return e.clientY <= rect.top + rect.height / 2;
+      });
+      if (nextSibling) {
+        list.insertBefore(draggingHelperRow, nextSibling);
+      } else {
+        list.appendChild(draggingHelperRow);
+      }
+      // 即時更新序號顯示
+      [...list.querySelectorAll('.helper-item-row')].forEach((r, idx) => {
+        const numEl = r.querySelector('.helper-order-num');
+        if (numEl) numEl.textContent = `${idx + 1}.`;
+      });
+    });
+
+    const finishHelperDrag = () => {
+      if (!draggingHelperRow) return;
+      draggingHelperRow.classList.remove('dragging-helper-row');
+      draggingHelperRow = null;
+      const list = document.getElementById('helperManagerList');
+      if (!list) return;
+      const orderedIds = [...list.querySelectorAll('.helper-item-row')].map(r => r.getAttribute('data-helper-id'));
+      if (orderedIds.length === helpers.length) {
+        helpers = orderedIds.map(id => helpers.find(h => h.id === id)).filter(Boolean);
+        saveHelpers();
+        renderHelperManagerList();
+        refreshAllViews();
+      }
+    };
+
+    on('helperManagerList', 'pointerup', finishHelperDrag);
+    on('helperManagerList', 'pointercancel', finishHelperDrag);
 
     on('helperManagerList', 'click', e => {
       const eb = e.target.closest('[data-edit-helper]');
