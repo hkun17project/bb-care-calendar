@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-  <title>BB 照顧排班日曆 v1.9</title>
+  <title>BB 照顧排班日曆 v2.0</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
   <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
@@ -20,6 +20,11 @@
       box-shadow: 0 20px 50px rgba(0,0,0,0.35); overflow-x: hidden; transition: max-width 0.25s ease;
     }
     .mobile-shell.expanded-fullscreen { max-width: 100% !important; width: 100vw !important; min-height: 100dvh !important; border-radius: 0 !important; }
+
+    /* 照顧者模式 (唯讀)：自動隱藏所有編更者專屬按鈕與工具列 */
+    .mobile-shell.mode-caregiver .editor-only { display: none !important; }
+    .mobile-shell.mode-caregiver #mainScrollContainer { padding-bottom: 1.5rem !important; }
+
     .announcement-marquee-wrap { overflow: hidden; white-space: nowrap; position: relative; flex: 1; }
     .announcement-marquee-text { display: inline-block; padding-left: 100%; white-space: nowrap; animation: announcementScroll 16s linear infinite; }
     .announcement-marquee-wrap:active .announcement-marquee-text { animation-play-state: paused; }
@@ -82,18 +87,11 @@
       100% { transform: translateX(0%); }
     }
 
-    /* 照顧者設定上下拖曳排序樣式 */
-    .helper-drag-handle {
-      touch-action: none;
-      cursor: grab;
-    }
-    .helper-drag-handle:active {
-      cursor: grabbing;
-    }
-    .helper-item-row {
-      transition: transform 0.12s ease, box-shadow 0.12s ease, background-color 0.12s ease;
-    }
-    .helper-item-row.dragging-helper-row {
+    /* 通用上下拖曳排序手柄與動畫樣式 (照顧者設定 & 更期設定) */
+    .drag-handle { touch-action: none; cursor: grab; }
+    .drag-handle:active { cursor: grabbing; }
+    .sortable-row { transition: transform 0.12s ease, box-shadow 0.12s ease, background-color 0.12s ease; }
+    .sortable-row.is-dragging {
       background-color: #FDF2F8 !important;
       border-color: #EC4899 !important;
       box-shadow: 0 8px 20px rgba(236, 72, 153, 0.22);
@@ -112,7 +110,8 @@
   </style>
 </head>
 <body>
-  <div class="mobile-shell" id="appShell">
+  <!-- 預設為 mode-caregiver (照顧者唯讀模式) -->
+  <div class="mobile-shell mode-caregiver" id="appShell">
 
     <!-- 首次使用 PIN 碼驗證鎖定畫面 (預設家庭密碼: 0511) -->
     <div id="pinLockModal" class="fixed inset-0 z-[9999] bg-gradient-to-b from-slate-900 via-slate-800 to-slate-900 flex flex-col items-center justify-between px-6 py-10 text-white hidden">
@@ -152,32 +151,38 @@
     </div>
 
     <!-- 頂部導覽列 -->
-    <header class="sticky top-0 z-30 bg-white/95 backdrop-blur-md border-b border-pink-100 px-3.5 pt-2.5 pb-2">
-      <div class="flex items-center justify-between">
-        <div class="flex items-center gap-2 min-w-0">
-          <div class="w-9 h-9 rounded-xl bg-gradient-to-br from-pink-400 to-rose-400 flex items-center justify-center text-white shadow-sm shrink-0">
-            <i class="fa-solid fa-baby text-base"></i>
+    <header class="sticky top-0 z-30 bg-white/95 backdrop-blur-md border-b border-pink-100 px-3 pt-2.5 pb-2">
+      <div class="flex items-center justify-between gap-1">
+        <div class="flex items-center gap-1.5 min-w-0">
+          <div class="w-8 h-8 rounded-xl bg-gradient-to-br from-pink-400 to-rose-400 flex items-center justify-center text-white shadow-sm shrink-0">
+            <i class="fa-solid fa-baby text-sm"></i>
           </div>
           <div class="min-w-0">
             <div class="flex items-center gap-1">
-              <h1 class="text-sm font-extrabold text-slate-800 tracking-tight leading-tight truncate">BB 照顧排班日曆</h1>
-              <span class="text-[9px] font-bold px-1 py-0.5 rounded bg-pink-100 text-pink-600 shrink-0">v1.9</span>
-              <span id="cloudSyncBadge" class="inline-flex items-center gap-1 text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-slate-100 text-slate-500 border border-slate-200 shrink-0">
+              <h1 class="text-[13px] font-extrabold text-slate-800 tracking-tight leading-tight truncate">BB 照顧排班日曆</h1>
+              <span class="text-[8px] font-bold px-1 py-0.5 rounded bg-pink-100 text-pink-600 shrink-0">v2.0</span>
+              <span id="cloudSyncBadge" class="inline-flex items-center gap-1 text-[8px] font-bold px-1.5 py-0.5 rounded-full bg-slate-100 text-slate-500 border border-slate-200 shrink-0">
                 <span id="cloudSyncDot" class="w-1.5 h-1.5 rounded-full bg-slate-400"></span>
-                <span id="cloudSyncText">本機快取</span>
+                <span id="cloudSyncText">本機</span>
               </span>
             </div>
-            <p class="text-[10px] text-slate-500 font-medium truncate">長按圖示可編輯或刪除排班</p>
+            <p id="headerModeSubtitle" class="text-[10px] text-slate-500 font-medium truncate">唯讀閱覽模式 · 點選日期查看時間軸</p>
           </div>
         </div>
-        <div class="flex items-center gap-1.5 shrink-0">
+
+        <div class="flex items-center gap-1 shrink-0">
+          <!-- 模式切換 Toggle (照顧者模式 <-> 編更者模式) -->
+          <button id="modeToggleBtn" type="button" class="flex items-center gap-1 px-2 py-1 rounded-full bg-sky-50 hover:bg-sky-100 text-sky-700 text-[11px] font-extrabold border border-sky-200 transition active:scale-95">
+            <i id="modeToggleIcon" class="fa-solid fa-eye text-[10px]"></i>
+            <span id="modeToggleLabel">照顧者</span>
+          </button>
           <button id="fullscreenBtn" type="button" title="切換全螢幕顯示" class="w-7 h-7 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-600 flex items-center justify-center text-xs active:scale-95">
             <i id="fullscreenIcon" class="fa-solid fa-expand"></i>
           </button>
           <button id="lockAppBtn" type="button" title="鎖定畫面" class="w-7 h-7 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-600 flex items-center justify-center text-xs active:scale-95">
             <i class="fa-solid fa-lock"></i>
           </button>
-          <button id="openHelperModalBtn" type="button" class="flex items-center gap-1 px-2.5 py-1.5 rounded-full bg-pink-50 hover:bg-pink-100 text-pink-600 text-xs font-bold border border-pink-200 active:scale-95">
+          <button id="openHelperModalBtn" type="button" class="editor-only flex items-center gap-1 px-2 py-1 rounded-full bg-pink-50 hover:bg-pink-100 text-pink-600 text-[11px] font-bold border border-pink-200 active:scale-95">
             <i class="fa-solid fa-users-gear"></i>
             <span>照顧者</span>
           </button>
@@ -185,7 +190,7 @@
       </div>
 
       <!-- 頂部滾動公告欄 -->
-      <div id="announcementBar" class="mt-2 bg-gradient-to-r from-amber-50 via-orange-50/80 to-amber-50 border border-amber-200/80 rounded-xl px-2.5 py-1 flex items-center gap-2 cursor-pointer">
+      <div id="announcementBar" class="mt-2 bg-gradient-to-r from-amber-50 via-orange-50/80 to-amber-50 border border-amber-200/80 rounded-xl px-2.5 py-1 flex items-center gap-2">
         <span class="flex items-center gap-1 text-[10px] font-extrabold text-amber-700 bg-amber-200/70 px-1.5 py-0.5 rounded-md shrink-0">
           <i class="fa-solid fa-bullhorn text-[10px] text-amber-600"></i>
           <span>公告</span>
@@ -193,7 +198,7 @@
         <div class="announcement-marquee-wrap text-[11px] font-bold text-amber-900">
           <span id="announcementTextDisplay" class="announcement-marquee-text">🍼 歡迎使用 BB 照顧排班日曆！請各位家人及姐姐確認每日交接時間，辛苦晒大家！💕</span>
         </div>
-        <button id="editAnnouncementBtn" type="button" class="text-[10px] font-bold text-amber-700 flex items-center gap-0.5 shrink-0 pl-1 border-l border-amber-200">
+        <button id="editAnnouncementBtn" type="button" class="editor-only text-[10px] font-bold text-amber-700 flex items-center gap-0.5 shrink-0 pl-1 border-l border-amber-200">
           <i class="fa-solid fa-pen-to-square"></i>
           <span>編輯</span>
         </button>
@@ -204,7 +209,7 @@
     </header>
 
     <!-- 主內容區 -->
-    <main class="flex-1 px-3 pt-2.5 pb-24 flex flex-col gap-3">
+    <main id="mainScrollContainer" class="flex-1 px-3 pt-2.5 pb-24 flex flex-col gap-3">
       <!-- 月份與起始日切換列 -->
       <div class="flex items-center justify-between bg-white rounded-2xl px-3 py-2 shadow-sm border border-slate-100">
         <div class="flex items-center gap-1">
@@ -285,7 +290,6 @@
               <span class="absolute right-0">23:59</span>
             </div>
           </div>
-          <!-- Y 軸照顧者與連貫式夜間時間軸區域 -->
           <div id="ganttBody"></div>
         </div>
       </div>
@@ -297,7 +301,7 @@
             <i class="fa-solid fa-clock text-pink-500 text-xs"></i>
             <h3 id="selectedDateSummaryTitle" class="text-xs font-extrabold text-slate-700">當日照顧安排</h3>
           </div>
-          <button id="quickAddSelectedDateBtn" type="button" class="text-[11px] font-bold text-pink-600 bg-pink-50 px-2.5 py-1 rounded-full">
+          <button id="quickAddSelectedDateBtn" type="button" class="editor-only text-[11px] font-bold text-pink-600 bg-pink-50 px-2.5 py-1 rounded-full">
             + 新增當日排班
           </button>
         </div>
@@ -305,13 +309,13 @@
       </div>
     </main>
 
-    <!-- 右下角懸浮新增按鈕 -->
-    <button id="fabAddShiftBtn" type="button" class="fixed bottom-16 right-4 z-20 w-12 h-12 rounded-2xl bg-gradient-to-tr from-pink-500 to-rose-400 text-white shadow-lg shadow-pink-500/30 flex items-center justify-center text-lg active:scale-95">
+    <!-- 右下角懸浮新增按鈕 (僅編更者模式顯示) -->
+    <button id="fabAddShiftBtn" type="button" class="editor-only fixed bottom-16 right-4 z-20 w-12 h-12 rounded-2xl bg-gradient-to-tr from-pink-500 to-rose-400 text-white shadow-lg shadow-pink-500/30 flex items-center justify-center text-lg active:scale-95">
       <i class="fa-solid fa-calendar-plus"></i>
     </button>
 
-    <!-- 底部導覽列 -->
-    <nav id="bottomNavBar" class="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-[430px] bg-white/95 backdrop-blur-md border-t border-slate-100 px-3 py-2 flex justify-around items-center z-20 text-xs">
+    <!-- 底部導覽列 (僅編更者模式顯示) -->
+    <nav id="bottomNavBar" class="editor-only fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-[430px] bg-white/95 backdrop-blur-md border-t border-slate-100 px-3 py-2 flex justify-around items-center z-20 text-xs">
       <button id="navCalendarBtn" type="button" class="flex flex-col items-center gap-0.5 text-pink-600 font-bold">
         <i class="fa-solid fa-calendar-days text-sm"></i><span class="text-[10px]">排班日曆</span>
       </button>
@@ -328,6 +332,27 @@
         <i class="fa-solid fa-face-smile text-sm"></i><span class="text-[10px]">照顧者</span>
       </button>
     </nav>
+
+    <!-- 彈窗：切換至編更者模式防誤觸確認視窗 -->
+    <div id="modeConfirmModal" class="fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-xs hidden items-center justify-center p-6">
+      <div class="bg-white w-full max-w-[320px] rounded-3xl p-5 shadow-2xl text-center space-y-3">
+        <div class="w-12 h-12 rounded-2xl bg-pink-100 text-pink-600 mx-auto flex items-center justify-center text-xl shadow-xs">
+          <i class="fa-solid fa-pen-to-square"></i>
+        </div>
+        <h3 class="text-base font-extrabold text-slate-800">切換至「編更者模式」？</h3>
+        <p class="text-xs text-slate-500 leading-relaxed">
+          開啟後可新增、修改或刪除排班更表、更期設定、照顧者及家庭公告。
+        </p>
+        <div class="grid grid-cols-2 gap-2.5 pt-2">
+          <button id="cancelModeSwitchBtn" type="button" class="py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-600 font-bold text-xs">
+            取消
+          </button>
+          <button id="confirmModeSwitchBtn" type="button" class="py-2.5 rounded-xl bg-gradient-to-r from-pink-500 to-rose-500 text-white font-bold text-xs shadow-sm">
+            確定切換
+          </button>
+        </div>
+      </div>
+    </div>
 
     <!-- 彈窗 0：手動編輯頂部滾動公告 Modal -->
     <div id="announcementModal" class="fixed inset-0 z-50 bg-slate-900/50 hidden items-center justify-center p-5">
@@ -360,9 +385,9 @@
       </div>
     </div>
 
-    <!-- 彈窗 1：新增 / 編輯排班 Modal -->
+    <!-- 彈窗 1：新增 / 編輯排班 Modal (v2.0 支援多選照顧者、多選更期、+多組日期時間) -->
     <div id="shiftFormModal" class="fixed inset-0 z-50 bg-slate-900/50 hidden items-end justify-center">
-      <div class="bg-white w-full max-w-[430px] rounded-t-3xl p-5 max-h-[90dvh] overflow-y-auto shadow-2xl">
+      <div class="bg-white w-full max-w-[430px] rounded-t-3xl p-5 max-h-[92dvh] overflow-y-auto shadow-2xl">
         <div class="flex items-center justify-between pb-3 border-b border-slate-100">
           <h3 id="shiftFormTitle" class="text-base font-extrabold text-slate-800">新增照顧排班</h3>
           <button id="closeShiftFormModalBtn" type="button" class="w-8 h-8 rounded-full bg-slate-100 text-slate-500 flex items-center justify-center">
@@ -371,17 +396,25 @@
         </div>
         <form id="addShiftForm" class="space-y-4 mt-4">
           <input type="hidden" id="editingEntryId" value="" />
+
+          <!-- 1. 多選照顧者 -->
           <div>
-            <label class="block text-xs font-bold text-slate-700 mb-2">1. 選擇照顧者</label>
-            <div id="helperRadioGrid" class="grid grid-cols-4 gap-2"></div>
+            <div class="flex items-center justify-between mb-2">
+              <label class="block text-xs font-bold text-slate-700">1. 選擇照顧者 <span class="text-[10px] font-normal text-pink-600">(可多選)</span></label>
+              <button type="button" id="toggleSelectAllHelpersBtn" class="text-[10px] font-bold text-slate-500 bg-slate-100 hover:bg-slate-200 px-2 py-0.5 rounded-md">
+                全選 / 取消
+              </button>
+            </div>
+            <div id="helperCheckboxGrid" class="grid grid-cols-4 gap-2"></div>
           </div>
 
+          <!-- 2. 多選更期分類 -->
           <div>
             <div class="flex items-center justify-between mb-1.5 flex-wrap gap-1">
-              <label class="block text-xs font-bold text-slate-700">2. 選擇更期分類 (點擊自動填入時間)</label>
+              <label class="block text-xs font-bold text-slate-700">2. 選擇更期分類 <span class="text-[10px] font-normal text-pink-600">(可多選)</span></label>
               <div class="flex items-center gap-1.5">
                 <button type="button" id="openShiftPresetManagerFromFormBtn" class="text-[11px] font-bold text-indigo-600 bg-indigo-50 hover:bg-indigo-100 border border-indigo-200 px-2.5 py-1 rounded-full flex items-center gap-1 active:scale-95">
-                  <i class="fa-solid fa-sliders text-[10px]"></i><span>新增/修改更期</span>
+                  <i class="fa-solid fa-sliders text-[10px]"></i><span>更期設定</span>
                 </button>
                 <button type="button" id="fullDayQuickBtn" class="text-[11px] font-extrabold text-white bg-gradient-to-r from-emerald-500 to-teal-500 px-2.5 py-1 rounded-full flex items-center gap-1 active:scale-95">
                   <i class="fa-solid fa-clock-rotate-left text-[10px]"></i><span>全日</span>
@@ -391,38 +424,25 @@
             <div id="shiftPresetButtonsGrid" class="grid grid-cols-3 gap-2"></div>
           </div>
 
-          <div class="bg-slate-50 p-3 rounded-2xl border border-slate-200/80 space-y-3">
+          <!-- 3. 多組開始與結束日期時間 (+ 新增按鈕) -->
+          <div class="space-y-2.5">
             <div class="flex items-center justify-between">
               <span class="text-xs font-bold text-slate-700">3. 設定開始與結束日期時間</span>
-              <span id="overnightBadge" class="hidden text-[10px] font-bold bg-indigo-100 text-indigo-700 px-2 py-0.5 rounded-full">
-                <i class="fa-solid fa-moon mr-1"></i>跨日排班
-              </span>
+              <button type="button" id="addTimeSlotBtn" class="text-[11px] font-extrabold text-pink-600 bg-pink-50 hover:bg-pink-100 border border-pink-200 px-2.5 py-1 rounded-full flex items-center gap-1 active:scale-95 transition">
+                <i class="fa-solid fa-plus text-[10px]"></i><span>新增日期時間</span>
+              </button>
             </div>
-            <div class="grid grid-cols-2 gap-2.5">
-              <div>
-                <label class="block text-[11px] font-bold text-slate-500 mb-1">開始日期</label>
-                <input id="shiftStartDateInput" type="date" required class="w-full rounded-xl border border-slate-200 bg-white px-2.5 py-2 text-xs font-semibold text-slate-800" />
-              </div>
-              <div>
-                <label class="block text-[11px] font-bold text-slate-500 mb-1">開始時間 (24小時制)</label>
-                <input id="shiftStartInput" type="time" required class="w-full rounded-xl border border-slate-200 bg-white px-2.5 py-2 text-xs font-semibold text-slate-800" />
-              </div>
-            </div>
-            <div class="grid grid-cols-2 gap-2.5">
-              <div>
-                <label class="block text-[11px] font-bold text-slate-500 mb-1">結束日期 (可跨日)</label>
-                <input id="shiftEndDateInput" type="date" required class="w-full rounded-xl border border-slate-200 bg-white px-2.5 py-2 text-xs font-semibold text-slate-800" />
-              </div>
-              <div>
-                <label class="block text-[11px] font-bold text-slate-500 mb-1">結束時間 (24小時制)</label>
-                <input id="shiftEndInput" type="time" required class="w-full rounded-xl border border-slate-200 bg-white px-2.5 py-2 text-xs font-semibold text-slate-800" />
-              </div>
-            </div>
+
+            <div id="timeSlotsContainer" class="space-y-2.5"></div>
+
             <p class="text-[10px] text-slate-400 leading-relaxed">
-              <i class="fa-solid fa-circle-info mr-1 text-pink-400"></i>若手動修改的時間不符合預設更期，系統會自動按開始時間標籤為「早更 (06:00-11:59)」、「午更 (12:00-17:59)」或「夜更 (18:00-05:59)」。
+              <i class="fa-solid fa-circle-info mr-1 text-pink-400"></i>點選多個更期或按「+ 新增日期時間」可一次建立多組時段；若手動修改的時間不符合預設更期，系統會自動按開始時間標籤為「早更」、「午更」或「夜更」。
             </p>
           </div>
-          <button type="submit" class="w-full py-3 rounded-xl bg-gradient-to-r from-pink-500 to-rose-500 text-white font-bold text-sm shadow-md">儲存排班</button>
+
+          <button id="submitShiftFormBtn" type="submit" class="w-full py-3 rounded-xl bg-gradient-to-r from-pink-500 to-rose-500 text-white font-bold text-sm shadow-md">
+            儲存排班
+          </button>
         </form>
       </div>
     </div>
@@ -445,7 +465,7 @@
       </div>
     </div>
 
-    <!-- 彈窗 3：照顧者管理及喜愛圖示設定 (v1.9 支援手動上下拖動排序) -->
+    <!-- 彈窗 3：照顧者管理及喜愛圖示設定 (支援手動上下拖動排序) -->
     <div id="helperManagerModal" class="fixed inset-0 z-50 bg-slate-900/50 hidden items-end justify-center">
       <div class="bg-white w-full max-w-[430px] rounded-t-3xl p-5 max-h-[88dvh] overflow-y-auto shadow-2xl">
         <div class="flex items-center justify-between pb-3 border-b border-slate-100">
@@ -496,13 +516,13 @@
       </div>
     </div>
 
-    <!-- 彈窗 4：新增及修改更期設定 Modal -->
+    <!-- 彈窗 4：新增及修改更期設定 Modal (v2.0 支援長按上下拉動排序) -->
     <div id="shiftPresetManagerModal" class="fixed inset-0 z-50 bg-slate-900/50 hidden items-end justify-center">
       <div class="bg-white w-full max-w-[430px] rounded-t-3xl p-5 max-h-[88dvh] overflow-y-auto shadow-2xl">
         <div class="flex items-center justify-between pb-3 border-b border-slate-100">
           <div>
-            <h3 class="text-base font-extrabold text-slate-800">更期設定 (新增及修改更期)</h3>
-            <p class="text-[11px] text-slate-400">可自由新增更期，或修改早更/午更/夜更的預設時間</p>
+            <h3 class="text-base font-extrabold text-slate-800">更期設定及排序</h3>
+            <p class="text-[11px] text-slate-400">按住左側 <i class="fa-solid fa-grip-lines text-slate-500 mx-0.5"></i> 上下拉動可調整更期顯示次序</p>
           </div>
           <button id="closeShiftPresetModalBtn" type="button" class="w-8 h-8 rounded-full bg-slate-100 text-slate-500 flex items-center justify-center">
             <i class="fa-solid fa-xmark"></i>
@@ -544,7 +564,7 @@
           </button>
         </div>
 
-        <div id="shiftPresetManagerList" class="space-y-2.5 mt-4"></div>
+        <div id="shiftPresetManagerList" class="space-y-2 mt-4"></div>
       </div>
     </div>
 
@@ -559,6 +579,9 @@
     const PIN_STORAGE_KEY = 'bb_care_pin_verified_v1';
     const TARGET_PIN = '0511';
     let currentPinInput = '';
+
+    // 模式狀態：預設為 false (照顧者唯讀模式)，切換為 true 時進入「編更者模式」
+    let isEditorMode = false;
 
     const ICON_CATEGORIES = [
       {
@@ -713,7 +736,10 @@
       try { const s = localStorage.getItem(STORAGE_KEY_ANNOUNCEMENT); return (s && s.trim()) ? s.trim() : DEFAULT_ANNOUNCEMENT; } catch (e) { return DEFAULT_ANNOUNCEMENT; }
     })();
 
-    let selectedShiftPreset = shiftPresets[0]?.id || 'morning';
+    // 表單批量排班狀態 (v2.0)
+    let formSelectedHelperIds = [];
+    let formTimeSlots = []; // [{ slotId, shiftId, label, startDate, start, endDate, end }]
+
     let activeActionEntryId = null;
     let tempHelperColor = HELPER_COLORS[0];
     let tempHelperIcon = '🐱';
@@ -752,6 +778,38 @@
       }
     }
 
+    // 切換照顧者模式 / 編更者模式
+    function applyAppModeUI() {
+      const shell = document.getElementById('appShell');
+      const btn = document.getElementById('modeToggleBtn');
+      const icon = document.getElementById('modeToggleIcon');
+      const label = document.getElementById('modeToggleLabel');
+      const sub = document.getElementById('headerModeSubtitle');
+      if (!shell || !btn) return;
+
+      if (isEditorMode) {
+        shell.classList.remove('mode-caregiver');
+        shell.classList.add('mode-editor');
+        btn.className = 'flex items-center gap-1 px-2 py-1 rounded-full bg-pink-500 text-white text-[11px] font-extrabold border border-pink-600 shadow-xs transition active:scale-95';
+        icon.className = 'fa-solid fa-pen-to-square text-[10px]';
+        label.textContent = '編更者';
+        if (sub) sub.textContent = '編更者模式 · 長按圖示可編輯或刪除排班';
+      } else {
+        shell.classList.remove('mode-editor');
+        shell.classList.add('mode-caregiver');
+        btn.className = 'flex items-center gap-1 px-2 py-1 rounded-full bg-sky-50 hover:bg-sky-100 text-sky-700 text-[11px] font-extrabold border border-sky-200 transition active:scale-95';
+        icon.className = 'fa-solid fa-eye text-[10px]';
+        label.textContent = '照顧者';
+        if (sub) sub.textContent = '唯讀閱覽模式 · 點選日期查看時間軸';
+        // 切回照顧者模式時自動關閉所有編輯彈窗
+        closeShiftFormModal();
+        closeHelperModal();
+        closeAnnModal();
+        closeShiftPresetManagerModal();
+        closeActionMenu();
+      }
+    }
+
     // Firebase 雲端同步
     const firebaseConfig = {
       apiKey: "AIzaSyDKGV_ub5ZyH7Dz-5wJlo9uDYjjtOc7Adc",
@@ -771,17 +829,17 @@
       const text = document.getElementById('cloudSyncText');
       if (!badge || !dot || !text) return;
       if (status === 'synced') {
-        badge.className = 'inline-flex items-center gap-1 text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-emerald-50 text-emerald-600 border border-emerald-200 shrink-0';
+        badge.className = 'inline-flex items-center gap-1 text-[8px] font-bold px-1.5 py-0.5 rounded-full bg-emerald-50 text-emerald-600 border border-emerald-200 shrink-0';
         dot.className = 'w-1.5 h-1.5 rounded-full bg-emerald-500';
-        text.textContent = '雲端同步';
+        text.textContent = '雲端';
       } else if (status === 'syncing') {
-        badge.className = 'inline-flex items-center gap-1 text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-amber-50 text-amber-600 border border-amber-200 shrink-0';
+        badge.className = 'inline-flex items-center gap-1 text-[8px] font-bold px-1.5 py-0.5 rounded-full bg-amber-50 text-amber-600 border border-amber-200 shrink-0';
         dot.className = 'w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse';
-        text.textContent = '同步中';
+        text.textContent = '同步';
       } else {
-        badge.className = 'inline-flex items-center gap-1 text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-slate-100 text-slate-500 border border-slate-200 shrink-0';
+        badge.className = 'inline-flex items-center gap-1 text-[8px] font-bold px-1.5 py-0.5 rounded-full bg-slate-100 text-slate-500 border border-slate-200 shrink-0';
         dot.className = 'w-1.5 h-1.5 rounded-full bg-slate-400';
-        text.textContent = '本機快取';
+        text.textContent = '本機';
       }
     }
 
@@ -826,9 +884,11 @@
                 try { localStorage.setItem(STORAGE_KEY_ANNOUNCEMENT, announcementText); } catch (e) {}
               }
               refreshAllViews();
-              const helperModal = document.getElementById('helperManagerModal');
-              if (helperModal && !helperModal.classList.contains('hidden') && !draggingHelperRow) {
-                renderHelperManagerList();
+              if (!activeDragState) {
+                const helperModal = document.getElementById('helperManagerModal');
+                if (helperModal && !helperModal.classList.contains('hidden')) renderHelperManagerList();
+                const shiftModal = document.getElementById('shiftPresetManagerModal');
+                if (shiftModal && !shiftModal.classList.contains('hidden')) renderShiftPresetManagerList();
               }
             }
             updateCloudBadgeUI('synced');
@@ -926,9 +986,6 @@
       bar.innerHTML = html;
     }
 
-    /**
-     * 渲染月曆 (v1.9 更新：同一日內每位照顧者圖示只顯示一次，並嚴格按照「照顧者設定」內的清單次序排列)
-     */
     function renderCalendar(monthSwipeDirection = null) {
       const headerEl = document.getElementById('weekdayHeader');
       const toggleLabel = document.getElementById('weekStartLabel');
@@ -981,9 +1038,7 @@
         const dow = new Date(cy, cm - 1, cd).getDay();
         const numCol = isToday ? 'text-pink-600 font-extrabold' : (dow === 0 ? 'text-rose-500' : (dow === 6 ? 'text-sky-600' : 'text-slate-700'));
 
-        // 按「照顧者設定」清單 (helpers) 的順序篩選出當日有排班的照顧者（每位照顧者在同一日只出現一次）
         const uniqueOrderedHelpers = helpers.filter(h => dayEntries.some(e => e.helperId === h.id));
-
         const sz = uniqueOrderedHelpers.length <= 2
           ? 'chip-size-normal'
           : (uniqueOrderedHelpers.length <= 4 ? 'chip-size-sm' : (uniqueOrderedHelpers.length <= 6 ? 'chip-size-xs' : 'chip-size-xxs'));
@@ -1031,7 +1086,6 @@
       }
 
       const dayEntries = getEntriesForDate(selectedDateStr);
-      // 甘特圖 Y 軸同樣按照「照顧者設定」清單次序排列當日指定照顧者
       const designatedHelpers = helpers.filter(h => dayEntries.some(e => e.helperId === h.id));
 
       if (designatedHelpers.length === 0) {
@@ -1101,7 +1155,7 @@
       const dayEntries = getEntriesForDate(selectedDateStr);
       if (dayEntries.length === 0) {
         listEl.innerHTML = `<div class="text-center py-5 bg-slate-50 rounded-xl border border-dashed border-slate-200">
-          <p class="text-xs text-slate-400 font-medium">此日期暫無照顧排班，點擊上方「+ 新增當日排班」安排人手</p>
+          <p class="text-xs text-slate-400 font-medium">此日期暫無照顧排班</p>
         </div>`;
         return;
       }
@@ -1110,7 +1164,7 @@
         const sInfo = resolveEntryShiftBadge(entry);
         return `<div class="flex items-center justify-between p-2.5 rounded-xl bg-slate-50/90 border border-slate-100">
           <div class="flex items-center gap-2.5">
-            <div class="w-9 h-9 rounded-xl flex items-center justify-center text-white text-sm cursor-pointer" data-entry-id="${entry.id}" style="background:${h.color}">
+            <div class="w-9 h-9 rounded-xl flex items-center justify-center text-white text-sm" data-entry-id="${entry.id}" style="background:${h.color}">
               ${renderHelperIconHtml(h.icon)}
             </div>
             <div>
@@ -1121,7 +1175,7 @@
               <p class="text-[11px] text-pink-600 font-bold mt-0.5"><i class="fa-regular fa-clock mr-1"></i>${formatEntryRangeBadge(entry)}</p>
             </div>
           </div>
-          <button type="button" class="open-entry-action-btn w-7 h-7 rounded-full text-slate-400 flex items-center justify-center text-xs" data-entry-id="${entry.id}">
+          <button type="button" class="editor-only open-entry-action-btn w-7 h-7 rounded-full text-slate-400 flex items-center justify-center text-xs" data-entry-id="${entry.id}">
             <i class="fa-solid fa-ellipsis-vertical"></i>
           </button>
         </div>`;
@@ -1136,15 +1190,51 @@
       renderSelectedDateSummary();
     }
 
+    /**************************************************************
+     * 批量排班表單渲染與互動 (v2.0 多選照顧者 + 多選更期 + 多組時段)
+     **************************************************************/
+    function updateSubmitBatchButtonText() {
+      const btn = document.getElementById('submitShiftFormBtn');
+      if (!btn) return;
+      const hCount = formSelectedHelperIds.length;
+      const sCount = formTimeSlots.length;
+      const total = hCount * sCount;
+      if (total > 1) {
+        btn.textContent = `儲存排班 (${hCount} 位照顧者 × ${sCount} 組時段 = 共 ${total} 筆)`;
+      } else {
+        btn.textContent = '儲存排班';
+      }
+    }
+
+    function renderHelperCheckboxGrid() {
+      const c = document.getElementById('helperCheckboxGrid');
+      if (!c) return;
+      c.innerHTML = helpers.map(h => {
+        const checked = formSelectedHelperIds.includes(h.id);
+        return `<button type="button" data-toggle-helper="${h.id}" class="helper-multi-btn relative p-2 rounded-xl border flex flex-col items-center gap-1 transition ${
+          checked
+            ? 'border-pink-500 bg-pink-50/80 ring-2 ring-pink-200'
+            : 'border-slate-200 bg-slate-50/60 opacity-75'
+        }">
+          ${checked ? '<span class="absolute top-1 right-1 w-4 h-4 rounded-full bg-pink-500 text-white text-[9px] flex items-center justify-center shadow-2xs"><i class="fa-solid fa-check"></i></span>' : ''}
+          <span class="w-8 h-8 rounded-full flex items-center justify-center text-white text-xs shadow-2xs" style="background:${h.color}">${renderHelperIconHtml(h.icon)}</span>
+          <span class="text-[11px] font-bold text-slate-700 truncate w-full text-center">${h.name}</span>
+        </button>`;
+      }).join('');
+      updateSubmitBatchButtonText();
+    }
+
     function renderShiftPresetButtonsInForm() {
       const grid = document.getElementById('shiftPresetButtonsGrid');
       if (!grid) return;
+      const activeShiftIds = formTimeSlots.map(slot => slot.shiftId);
       grid.innerHTML = shiftPresets.map(s => {
-        const active = s.id === selectedShiftPreset;
+        const active = activeShiftIds.includes(s.id);
         const isOvernight = s.defaultEnd < s.defaultStart;
-        return `<button type="button" data-shift="${s.id}" class="shift-preset-btn py-2 px-1.5 rounded-xl border text-xs font-bold flex flex-col items-center gap-0.5 transition ${
-          active ? 'border-pink-500 bg-pink-50 text-pink-700 ring-1 ring-pink-300' : 'border-slate-200 bg-white text-slate-700'
+        return `<button type="button" data-shift="${s.id}" class="shift-preset-btn relative py-2 px-1.5 rounded-xl border text-xs font-bold flex flex-col items-center gap-0.5 transition ${
+          active ? 'border-pink-500 bg-pink-50 text-pink-700 ring-2 ring-pink-200' : 'border-slate-200 bg-white text-slate-700'
         }">
+          ${active ? '<span class="absolute top-1 right-1 w-3.5 h-3.5 rounded-full bg-pink-500 text-white text-[8px] flex items-center justify-center"><i class="fa-solid fa-check"></i></span>' : ''}
           <i class="fa-solid ${s.icon || 'fa-clock'} ${s.iconColor || 'text-amber-500'} text-sm"></i>
           <span class="truncate w-full text-center">${s.label}</span>
           <span class="text-[9px] font-normal text-slate-400">${s.defaultStart}–${s.defaultEnd}${isOvernight ? ' (+1日)' : ''}</span>
@@ -1152,64 +1242,104 @@
       }).join('');
     }
 
-    function renderHelperRadioGrid(selectedId) {
-      const c = document.getElementById('helperRadioGrid');
-      if (!c) return;
-      const chosen = selectedId || (helpers[0] && helpers[0].id);
-      c.innerHTML = helpers.map(h => `<label class="cursor-pointer">
-        <input type="radio" name="helperId" value="${h.id}" class="peer sr-only" ${h.id === chosen ? 'checked' : ''} />
-        <div class="p-2 rounded-xl border border-slate-200 bg-slate-50/60 peer-checked:border-pink-500 peer-checked:bg-pink-50/70 flex flex-col items-center gap-1">
-          <span class="w-8 h-8 rounded-full flex items-center justify-center text-white text-xs" style="background:${h.color}">${renderHelperIconHtml(h.icon)}</span>
-          <span class="text-[11px] font-bold text-slate-700 truncate w-full text-center">${h.name}</span>
-        </div>
-      </label>`).join('');
-    }
+    function renderTimeSlotsContainer() {
+      const container = document.getElementById('timeSlotsContainer');
+      if (!container) return;
 
-    function updateOvernightBadge() {
-      const s = document.getElementById('shiftStartDateInput')?.value;
-      const e = document.getElementById('shiftEndDateInput')?.value;
-      const b = document.getElementById('overnightBadge');
-      if (b) b.classList.toggle('hidden', !(s && e && e > s));
-    }
-
-    function highlightShiftPresetButton(shiftKey, autofill = false) {
-      const preset = getShiftPresetById(shiftKey);
-      selectedShiftPreset = preset.id;
-      renderShiftPresetButtonsInForm();
-      if (autofill && preset) {
-        const sDate = document.getElementById('shiftStartDateInput').value || selectedDateStr;
-        document.getElementById('shiftStartInput').value = preset.defaultStart;
-        document.getElementById('shiftEndInput').value = preset.defaultEnd;
-        const isOvernight = preset.defaultEnd < preset.defaultStart;
-        document.getElementById('shiftEndDateInput').value = isOvernight ? addDaysToDateStr(sDate, 1) : sDate;
-        updateOvernightBadge();
+      if (formTimeSlots.length === 0) {
+        container.innerHTML = `<div class="text-center py-4 bg-slate-50 rounded-2xl border border-dashed border-slate-200">
+          <p class="text-xs text-slate-400 font-medium">請點選上方更期分類，或按「+ 新增日期時間」</p>
+        </div>`;
+        updateSubmitBatchButtonText();
+        return;
       }
+
+      container.innerHTML = formTimeSlots.map((slot, idx) => {
+        const isOvernight = slot.endDate > slot.startDate;
+        const presetObj = shiftPresets.find(s => s.id === slot.shiftId);
+        const tagLabel = slot.customTag || (presetObj ? presetObj.label : '自訂時段');
+        return `<div class="time-slot-card bg-slate-50 p-3 rounded-2xl border border-slate-200/90 space-y-2.5" data-slot-idx="${idx}">
+          <div class="flex items-center justify-between">
+            <div class="flex items-center gap-1.5">
+              <span class="w-5 h-5 rounded-full bg-pink-100 text-pink-600 text-[10px] font-extrabold flex items-center justify-center">${idx + 1}</span>
+              <span class="text-xs font-extrabold text-slate-700">時段 ${idx + 1} · ${tagLabel}</span>
+              ${isOvernight ? '<span class="text-[10px] font-bold bg-indigo-100 text-indigo-700 px-2 py-0.5 rounded-full"><i class="fa-solid fa-moon mr-0.5"></i>跨日</span>' : ''}
+            </div>
+            ${formTimeSlots.length > 1 ? `<button type="button" data-remove-slot="${idx}" class="w-6 h-6 rounded-full bg-rose-50 hover:bg-rose-100 text-rose-500 flex items-center justify-center text-[11px]" title="移除此時段">
+              <i class="fa-solid fa-trash-can"></i>
+            </button>` : ''}
+          </div>
+          <div class="grid grid-cols-2 gap-2">
+            <div>
+              <label class="block text-[10px] font-bold text-slate-500 mb-0.5">開始日期</label>
+              <input type="date" data-slot-field="startDate" data-slot-idx="${idx}" value="${slot.startDate}" required class="slot-input w-full rounded-xl border border-slate-200 bg-white px-2 py-1.5 text-xs font-semibold text-slate-800" />
+            </div>
+            <div>
+              <label class="block text-[10px] font-bold text-slate-500 mb-0.5">開始時間 (24小時制)</label>
+              <input type="time" data-slot-field="start" data-slot-idx="${idx}" value="${slot.start}" required class="slot-input w-full rounded-xl border border-slate-200 bg-white px-2 py-1.5 text-xs font-semibold text-slate-800" />
+            </div>
+          </div>
+          <div class="grid grid-cols-2 gap-2">
+            <div>
+              <label class="block text-[10px] font-bold text-slate-500 mb-0.5">結束日期 (可跨日)</label>
+              <input type="date" data-slot-field="endDate" data-slot-idx="${idx}" value="${slot.endDate}" required class="slot-input w-full rounded-xl border border-slate-200 bg-white px-2 py-1.5 text-xs font-semibold text-slate-800" />
+            </div>
+            <div>
+              <label class="block text-[10px] font-bold text-slate-500 mb-0.5">結束時間 (24小時制)</label>
+              <input type="time" data-slot-field="end" data-slot-idx="${idx}" value="${slot.end}" required class="slot-input w-full rounded-xl border border-slate-200 bg-white px-2 py-1.5 text-xs font-semibold text-slate-800" />
+            </div>
+          </div>
+        </div>`;
+      }).join('');
+
+      updateSubmitBatchButtonText();
+    }
+
+    function createSlotFromPreset(preset, baseDateStr) {
+      const isOvernight = preset.defaultEnd < preset.defaultStart;
+      return {
+        slotId: 'slot_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6),
+        shiftId: preset.id,
+        customTag: preset.label,
+        startDate: baseDateStr,
+        start: preset.defaultStart,
+        endDate: isOvernight ? addDaysToDateStr(baseDateStr, 1) : baseDateStr,
+        end: preset.defaultEnd
+      };
     }
 
     function openShiftFormModal({ dateStr, entryId = null }) {
       const modal = document.getElementById('shiftFormModal');
       if (!modal) return;
+
       if (entryId) {
         const e = entries.find(x => x.id === entryId);
         if (!e) return;
         document.getElementById('shiftFormTitle').textContent = '編輯照顧排班';
         document.getElementById('editingEntryId').value = e.id;
-        document.getElementById('shiftStartDateInput').value = e.startDate;
-        document.getElementById('shiftEndDateInput').value = e.endDate;
-        renderHelperRadioGrid(e.helperId);
-        highlightShiftPresetButton(e.shift || shiftPresets[0]?.id, false);
-        document.getElementById('shiftStartInput').value = e.start;
-        document.getElementById('shiftEndInput').value = e.end;
+        formSelectedHelperIds = [e.helperId];
+        const sInfo = resolveEntryShiftBadge(e);
+        formTimeSlots = [{
+          slotId: 'slot_edit',
+          shiftId: e.shift || shiftPresets[0]?.id || 'morning',
+          customTag: sInfo.label,
+          startDate: e.startDate,
+          start: e.start,
+          endDate: e.endDate,
+          end: e.end
+        }];
       } else {
         const d = isValidDateStr(dateStr) ? dateStr : selectedDateStr;
         document.getElementById('shiftFormTitle').textContent = '新增照顧排班';
         document.getElementById('editingEntryId').value = '';
-        document.getElementById('shiftStartDateInput').value = d;
-        document.getElementById('shiftEndDateInput').value = d;
-        renderHelperRadioGrid(helpers[0]?.id);
-        highlightShiftPresetButton(shiftPresets[0]?.id, true);
+        formSelectedHelperIds = helpers[0] ? [helpers[0].id] : [];
+        const firstPreset = shiftPresets[0] || DEFAULT_SHIFT_PRESETS[0];
+        formTimeSlots = [createSlotFromPreset(firstPreset, d)];
       }
-      updateOvernightBadge();
+
+      renderHelperCheckboxGrid();
+      renderShiftPresetButtonsInForm();
+      renderTimeSlotsContainer();
       modal.classList.remove('hidden');
       modal.classList.add('flex');
     }
@@ -1219,6 +1349,7 @@
       if (m) { m.classList.add('hidden'); m.classList.remove('flex'); }
     }
 
+    // 更期設定 Modal
     function renderShiftPresetThemePicker() {
       const container = document.getElementById('shiftPresetThemePicker');
       if (!container) return;
@@ -1248,20 +1379,23 @@
       if (!list) return;
       list.innerHTML = shiftPresets.map((s, i) => {
         const isOvernight = s.defaultEnd < s.defaultStart;
-        return `<div class="p-3 rounded-2xl bg-slate-50 border border-slate-200/80 flex items-center justify-between">
-          <div class="flex items-center gap-2.5">
-            <span class="text-[11px] font-bold text-slate-400 w-4">${i + 1}.</span>
+        return `<div class="sortable-row p-2.5 rounded-2xl bg-slate-50 border border-slate-200/80 flex items-center justify-between" data-shift-id="${s.id}">
+          <div class="flex items-center gap-2">
+            <div class="drag-handle shift-drag-handle w-7 h-8 rounded-lg flex items-center justify-center text-slate-400 hover:text-indigo-500 active:text-indigo-600" title="按住上下拖動排序">
+              <i class="fa-solid fa-grip-lines text-sm"></i>
+            </div>
+            <span class="row-order-num text-[11px] font-bold text-slate-400 w-4">${i + 1}.</span>
             <span class="px-2.5 py-1 rounded-xl text-xs font-extrabold flex items-center gap-1.5" style="background:${s.badgeBg};color:${s.badgeText}">
               <i class="fa-solid ${s.icon || 'fa-clock'}"></i><span>${s.label}</span>
             </span>
             <div class="text-xs font-bold text-slate-600">
-              ${s.defaultStart} – ${s.defaultEnd}
-              ${isOvernight ? '<span class="text-[10px] text-indigo-600 font-bold ml-1">(跨日)</span>' : ''}
+              ${s.defaultStart}–${s.defaultEnd}
+              ${isOvernight ? '<span class="text-[10px] text-indigo-600 font-bold ml-0.5">(跨日)</span>' : ''}
             </div>
           </div>
-          <div class="flex items-center gap-1.5">
-            <button type="button" data-edit-shift="${s.id}" class="px-2.5 py-1 rounded-lg bg-white border border-slate-200 text-slate-600 text-[11px] font-bold">修改</button>
-            <button type="button" data-delete-shift="${s.id}" class="px-2.5 py-1 rounded-lg bg-rose-50 border border-rose-200 text-rose-600 text-[11px] font-bold">刪除</button>
+          <div class="flex items-center gap-1">
+            <button type="button" data-edit-shift="${s.id}" class="px-2 py-1 rounded-lg bg-white border border-slate-200 text-slate-600 text-[11px] font-bold">修改</button>
+            <button type="button" data-delete-shift="${s.id}" class="px-2 py-1 rounded-lg bg-rose-50 border border-rose-200 text-rose-600 text-[11px] font-bold">刪除</button>
           </div>
         </div>`;
       }).join('');
@@ -1281,6 +1415,7 @@
     }
 
     function openActionMenuForEntry(entryId) {
+      if (!isEditorMode) return;
       const e = entries.find(x => x.id === entryId);
       if (!e) return;
       activeActionEntryId = entryId;
@@ -1338,18 +1473,15 @@
       document.getElementById('helperEditorCard').classList.remove('hidden');
     }
 
-    /**
-     * 渲染照顧者設定清單 (v1.9 加入左側上下拖動手柄 .helper-drag-handle)
-     */
     function renderHelperManagerList() {
       const list = document.getElementById('helperManagerList');
       if (!list) return;
-      list.innerHTML = helpers.map((h, i) => `<div class="helper-item-row p-2.5 rounded-2xl bg-slate-50 border border-slate-200/80 flex items-center justify-between" data-helper-id="${h.id}">
+      list.innerHTML = helpers.map((h, i) => `<div class="sortable-row p-2.5 rounded-2xl bg-slate-50 border border-slate-200/80 flex items-center justify-between" data-helper-id="${h.id}">
         <div class="flex items-center gap-2">
-          <div class="helper-drag-handle w-7 h-8 rounded-lg flex items-center justify-center text-slate-400 hover:text-pink-500 active:text-pink-600" title="按住上下拖動排序">
+          <div class="drag-handle helper-drag-handle w-7 h-8 rounded-lg flex items-center justify-center text-slate-400 hover:text-pink-500 active:text-pink-600" title="按住上下拖動排序">
             <i class="fa-solid fa-grip-lines text-sm"></i>
           </div>
-          <span class="helper-order-num text-[11px] font-bold text-slate-400 w-4">${i + 1}.</span>
+          <span class="row-order-num text-[11px] font-bold text-slate-400 w-4">${i + 1}.</span>
           <div class="w-9 h-9 rounded-xl flex items-center justify-center text-white text-sm shadow-2xs" style="background:${h.color}">${renderHelperIconHtml(h.icon)}</div>
           <div class="text-xs font-extrabold text-slate-800">${h.name}</div>
         </div>
@@ -1359,6 +1491,28 @@
         </div>
       </div>`).join('');
     }
+
+    const openHelperModal = () => {
+      document.getElementById('helperEditorCard').classList.add('hidden');
+      renderHelperManagerList();
+      const m = document.getElementById('helperManagerModal');
+      m.classList.remove('hidden'); m.classList.add('flex');
+    };
+    const closeHelperModal = () => {
+      const m = document.getElementById('helperManagerModal');
+      if (m) { m.classList.add('hidden'); m.classList.remove('flex'); }
+    };
+
+    const openAnnModal = () => {
+      if (!isEditorMode) return;
+      document.getElementById('announcementInput').value = announcementText;
+      const m = document.getElementById('announcementModal');
+      m.classList.remove('hidden'); m.classList.add('flex');
+    };
+    const closeAnnModal = () => {
+      const m = document.getElementById('announcementModal');
+      if (m) { m.classList.add('hidden'); m.classList.remove('flex'); }
+    };
 
     function changeMonthByDelta(delta, dir = null) {
       currentMonth += delta;
@@ -1411,7 +1565,60 @@
       }
     }
 
-    // 初始渲染
+    // 通用拖曳排序綁定器 (用於「照顧者設定」及「更期設定」清單)
+    let activeDragState = null;
+
+    function attachVerticalDragReorder(listId, handleSelector, onReorderComplete) {
+      const list = document.getElementById(listId);
+      if (!list) return;
+
+      list.addEventListener('pointerdown', e => {
+        const handle = e.target.closest(handleSelector);
+        if (!handle) return;
+        const row = handle.closest('.sortable-row');
+        if (!row) return;
+        e.preventDefault();
+        activeDragState = { list, row };
+        row.classList.add('is-dragging');
+        if (navigator.vibrate) navigator.vibrate(20);
+        if (handle.setPointerCapture) {
+          try { handle.setPointerCapture(e.pointerId); } catch (err) {}
+        }
+      });
+
+      list.addEventListener('pointermove', e => {
+        if (!activeDragState || activeDragState.list !== list) return;
+        e.preventDefault();
+        const { row } = activeDragState;
+        const siblings = [...list.querySelectorAll('.sortable-row:not(.is-dragging)')];
+        const nextSibling = siblings.find(sib => {
+          const rect = sib.getBoundingClientRect();
+          return e.clientY <= rect.top + rect.height / 2;
+        });
+        if (nextSibling) {
+          list.insertBefore(row, nextSibling);
+        } else {
+          list.appendChild(row);
+        }
+        [...list.querySelectorAll('.sortable-row')].forEach((r, idx) => {
+          const numEl = r.querySelector('.row-order-num');
+          if (numEl) numEl.textContent = `${idx + 1}.`;
+        });
+      });
+
+      const finishDrag = () => {
+        if (!activeDragState || activeDragState.list !== list) return;
+        activeDragState.row.classList.remove('is-dragging');
+        activeDragState = null;
+        onReorderComplete(list);
+      };
+
+      list.addEventListener('pointerup', finishDrag);
+      list.addEventListener('pointercancel', finishDrag);
+    }
+
+    // 初始渲染 (預設進入「照顧者模式」)
+    applyAppModeUI();
     refreshAllViews();
     checkPinVerification();
 
@@ -1421,9 +1628,32 @@
     on('pinBackspaceBtn', 'click', () => { currentPinInput = currentPinInput.slice(0, -1); updatePinDots(); });
     on('lockAppBtn', 'click', () => {
       try { localStorage.removeItem(PIN_STORAGE_KEY); } catch (e) {}
+      isEditorMode = false;
+      applyAppModeUI();
       currentPinInput = '';
       updatePinDots();
       document.getElementById('pinLockModal')?.classList.remove('hidden');
+    });
+
+    // 模式切換 Toggle 事件 (照顧者模式 -> 彈出防誤觸確認；編更者模式 -> 直接切回照顧者模式)
+    on('modeToggleBtn', 'click', () => {
+      if (!isEditorMode) {
+        const m = document.getElementById('modeConfirmModal');
+        if (m) { m.classList.remove('hidden'); m.classList.add('flex'); }
+      } else {
+        isEditorMode = false;
+        applyAppModeUI();
+      }
+    });
+    on('cancelModeSwitchBtn', 'click', () => {
+      const m = document.getElementById('modeConfirmModal');
+      if (m) { m.classList.add('hidden'); m.classList.remove('flex'); }
+    });
+    on('confirmModeSwitchBtn', 'click', () => {
+      const m = document.getElementById('modeConfirmModal');
+      if (m) { m.classList.add('hidden'); m.classList.remove('flex'); }
+      isEditorMode = true;
+      applyAppModeUI();
     });
 
     on('fullscreenBtn', 'click', () => {
@@ -1441,16 +1671,7 @@
       setTimeout(() => renderGanttChart(), 250);
     });
 
-    const openAnnModal = () => {
-      document.getElementById('announcementInput').value = announcementText;
-      const m = document.getElementById('announcementModal');
-      m.classList.remove('hidden'); m.classList.add('flex');
-    };
-    const closeAnnModal = () => {
-      const m = document.getElementById('announcementModal');
-      m.classList.add('hidden'); m.classList.remove('flex');
-    };
-    on('announcementBar', 'click', openAnnModal);
+    on('announcementBar', 'click', () => { if (isEditorMode) openAnnModal(); });
     on('navAnnouncementBtn', 'click', openAnnModal);
     on('closeAnnouncementModalBtn', 'click', closeAnnModal);
     on('saveAnnouncementBtn', 'click', () => {
@@ -1461,11 +1682,13 @@
       document.getElementById('announcementInput').value = b.getAttribute('data-template');
     }));
 
+    // 長按手勢 (僅在編更者模式生效)
     let pressTimer = null;
     let longPressTriggered = false;
     const clearPress = () => { if (pressTimer) { clearTimeout(pressTimer); pressTimer = null; } };
 
     on('appShell', 'pointerdown', e => {
+      if (!isEditorMode) return;
       const chip = e.target.closest('[data-entry-id]');
       if (!chip) return;
       const entryId = chip.getAttribute('data-entry-id');
@@ -1544,7 +1767,7 @@
 
     on('selectedDateQuickList', 'click', e => {
       const b = e.target.closest('.open-entry-action-btn');
-      if (b) { e.stopPropagation(); openActionMenuForEntry(b.getAttribute('data-entry-id')); }
+      if (b && isEditorMode) { e.stopPropagation(); openActionMenuForEntry(b.getAttribute('data-entry-id')); }
     });
 
     on('quickAddSelectedDateBtn', 'click', () => openShiftFormModal({ dateStr: selectedDateStr }));
@@ -1552,20 +1775,172 @@
     on('navAddShiftBtn', 'click', () => openShiftFormModal({ dateStr: selectedDateStr }));
     on('closeShiftFormModalBtn', 'click', closeShiftFormModal);
 
+    // 1. 多選照顧者互動
+    on('helperCheckboxGrid', 'click', e => {
+      const btn = e.target.closest('[data-toggle-helper]');
+      if (!btn) return;
+      const hId = btn.getAttribute('data-toggle-helper');
+      if (formSelectedHelperIds.includes(hId)) {
+        formSelectedHelperIds = formSelectedHelperIds.filter(id => id !== hId);
+      } else {
+        formSelectedHelperIds.push(hId);
+      }
+      renderHelperCheckboxGrid();
+    });
+
+    on('toggleSelectAllHelpersBtn', 'click', () => {
+      if (formSelectedHelperIds.length === helpers.length) {
+        formSelectedHelperIds = [];
+      } else {
+        formSelectedHelperIds = helpers.map(h => h.id);
+      }
+      renderHelperCheckboxGrid();
+    });
+
+    // 2. 多選更期分類互動 (點選加入該更期時段，再點一次移除該更期時段)
     on('shiftPresetButtonsGrid', 'click', e => {
-      const b = e.target.closest('.shift-preset-btn');
-      if (b) highlightShiftPresetButton(b.getAttribute('data-shift'), true);
+      const btn = e.target.closest('.shift-preset-btn');
+      if (!btn) return;
+      const shiftId = btn.getAttribute('data-shift');
+      const preset = getShiftPresetById(shiftId);
+      if (!preset) return;
+
+      const existingIdx = formTimeSlots.findIndex(slot => slot.shiftId === shiftId);
+      if (existingIdx > -1) {
+        formTimeSlots.splice(existingIdx, 1);
+      } else {
+        const baseDate = formTimeSlots[0]?.startDate || selectedDateStr;
+        formTimeSlots.push(createSlotFromPreset(preset, baseDate));
+      }
+      renderShiftPresetButtonsInForm();
+      renderTimeSlotsContainer();
     });
 
+    // 全日快捷按鈕
     on('fullDayQuickBtn', 'click', () => {
-      const s = document.getElementById('shiftStartDateInput').value || selectedDateStr;
-      document.getElementById('shiftStartDateInput').value = s;
-      document.getElementById('shiftEndDateInput').value = s;
-      document.getElementById('shiftStartInput').value = '00:00';
-      document.getElementById('shiftEndInput').value = '23:59';
-      updateOvernightBadge();
+      const baseDate = formTimeSlots[0]?.startDate || selectedDateStr;
+      const fullSlot = {
+        slotId: 'slot_fullday_' + Date.now(),
+        shiftId: 'fullday',
+        customTag: '全日',
+        startDate: baseDate,
+        start: '00:00',
+        endDate: baseDate,
+        end: '23:59'
+      };
+      if (formTimeSlots.length <= 1) {
+        formTimeSlots = [fullSlot];
+      } else {
+        formTimeSlots.push(fullSlot);
+      }
+      renderShiftPresetButtonsInForm();
+      renderTimeSlotsContainer();
     });
 
+    // 3. 「+ 新增日期時間」按鈕及個別時段輸入與刪除
+    on('addTimeSlotBtn', 'click', () => {
+      const lastSlot = formTimeSlots[formTimeSlots.length - 1];
+      const nextDate = lastSlot ? addDaysToDateStr(lastSlot.startDate, 1) : selectedDateStr;
+      const defaultPreset = shiftPresets[0] || DEFAULT_SHIFT_PRESETS[0];
+      formTimeSlots.push(createSlotFromPreset(defaultPreset, nextDate));
+      renderShiftPresetButtonsInForm();
+      renderTimeSlotsContainer();
+    });
+
+    on('timeSlotsContainer', 'click', e => {
+      const delBtn = e.target.closest('[data-remove-slot]');
+      if (!delBtn) return;
+      const idx = Number(delBtn.getAttribute('data-remove-slot'));
+      if (!isNaN(idx) && formTimeSlots.length > 1) {
+        formTimeSlots.splice(idx, 1);
+        renderShiftPresetButtonsInForm();
+        renderTimeSlotsContainer();
+      }
+    });
+
+    on('timeSlotsContainer', 'change', e => {
+      const inp = e.target.closest('.slot-input');
+      if (!inp) return;
+      const idx = Number(inp.getAttribute('data-slot-idx'));
+      const field = inp.getAttribute('data-slot-field');
+      const slot = formTimeSlots[idx];
+      if (!slot || !field) return;
+
+      slot[field] = inp.value;
+
+      if (field === 'startDate' && slot.endDate < slot.startDate) {
+        slot.endDate = slot.startDate;
+      }
+      if ((field === 'start' || field === 'end') && slot.startDate === slot.endDate && slot.end < slot.start) {
+        slot.endDate = addDaysToDateStr(slot.startDate, 1);
+      }
+      renderTimeSlotsContainer();
+    });
+
+    // 儲存批量排班
+    on('addShiftForm', 'submit', e => {
+      e.preventDefault();
+      if (formSelectedHelperIds.length === 0) return alert('請至少選擇一位照顧者！');
+      if (formTimeSlots.length === 0) return alert('請至少設定一組開始與結束日期時間！');
+
+      for (let i = 0; i < formTimeSlots.length; i++) {
+        const s = formTimeSlots[i];
+        if (!isValidDateStr(s.startDate) || !isValidDateStr(s.endDate) || !s.start || !s.end) {
+          return alert(`第 ${i + 1} 組時段的日期或時間格式不完整！`);
+        }
+        if (s.endDate < s.startDate) {
+          return alert(`第 ${i + 1} 組時段的結束日期不能早於開始日期！`);
+        }
+        if (getDaysDiff(s.startDate, s.endDate) > 60) {
+          return alert(`第 ${i + 1} 組單次跨日排班請勿超過 60 天！`);
+        }
+        if (s.startDate === s.endDate && s.end < s.start) {
+          s.endDate = addDaysToDateStr(s.startDate, 1);
+        }
+      }
+
+      const editingId = document.getElementById('editingEntryId').value;
+      const generatedEntries = [];
+
+      // 按照顧者順序與時段建立獨立排班紀錄
+      const orderedSelectedHelpers = helpers.filter(h => formSelectedHelperIds.includes(h.id));
+      orderedSelectedHelpers.forEach(h => {
+        formTimeSlots.forEach((slot, sIdx) => {
+          generatedEntries.push({
+            id: 'entry_' + Date.now() + '_' + h.id + '_' + sIdx + '_' + Math.random().toString(36).slice(2, 5),
+            startDate: slot.startDate,
+            endDate: slot.endDate,
+            helperId: h.id,
+            shift: slot.shiftId || 'morning',
+            start: slot.start,
+            end: slot.end
+          });
+        });
+      });
+
+      if (editingId) {
+        const idx = entries.findIndex(x => x.id === editingId);
+        if (idx > -1 && generatedEntries.length > 0) {
+          entries[idx] = { ...generatedEntries[0], id: editingId };
+          for (let k = 1; k < generatedEntries.length; k++) {
+            entries.push(generatedEntries[k]);
+          }
+        }
+      } else {
+        entries.push(...generatedEntries);
+      }
+
+      const firstStartDate = formTimeSlots[0].startDate;
+      selectedDateStr = firstStartDate;
+      const [y, m] = firstStartDate.split('-').map(Number);
+      currentYear = y; currentMonth = m - 1;
+
+      saveEntries();
+      closeShiftFormModal();
+      refreshAllViews();
+    });
+
+    // 更期設定 Modal 互動與上下拖動排序
     on('navShiftPresetsBtn', 'click', openShiftPresetManagerModal);
     on('openShiftPresetManagerFromFormBtn', 'click', openShiftPresetManagerModal);
     on('closeShiftPresetModalBtn', 'click', closeShiftPresetManagerModal);
@@ -1598,9 +1973,8 @@
           s.badgeText = theme.badgeText;
         }
       } else {
-        const newId = 'shift_' + Date.now();
         shiftPresets.push({
-          id: newId,
+          id: 'shift_' + Date.now(),
           label,
           defaultStart,
           defaultEnd,
@@ -1609,7 +1983,6 @@
           badgeBg: theme.badgeBg,
           badgeText: theme.badgeText
         });
-        selectedShiftPreset = newId;
       }
       saveShiftPresets();
       document.getElementById('shiftPresetEditorCard').classList.add('hidden');
@@ -1632,62 +2005,28 @@
         const target = shiftPresets.find(x => x.id === id);
         if (target && confirm(`確定要刪除「${target.label}」更期嗎？`)) {
           shiftPresets = shiftPresets.filter(x => x.id !== id);
-          if (selectedShiftPreset === id) selectedShiftPreset = shiftPresets[0].id;
+          formTimeSlots = formTimeSlots.filter(slot => slot.shiftId !== id);
           saveShiftPresets();
           renderShiftPresetManagerList();
           renderShiftPresetButtonsInForm();
+          renderTimeSlotsContainer();
           refreshAllViews();
         }
       }
     });
 
-    on('shiftStartDateInput', 'change', e => {
-      const ed = document.getElementById('shiftEndDateInput');
-      if (ed.value < e.target.value) ed.value = e.target.value;
-      updateOvernightBadge();
-    });
-    on('shiftEndDateInput', 'change', updateOvernightBadge);
-
-    const checkOvernightTime = () => {
-      const sT = document.getElementById('shiftStartInput').value;
-      const eT = document.getElementById('shiftEndInput').value;
-      const sD = document.getElementById('shiftStartDateInput').value;
-      const eD = document.getElementById('shiftEndDateInput').value;
-      if (sD && eD && sD === eD && eT < sT) {
-        document.getElementById('shiftEndDateInput').value = addDaysToDateStr(sD, 1);
-        updateOvernightBadge();
+    // 啟用「更期設定」清單上下拉動排序
+    attachVerticalDragReorder('shiftPresetManagerList', '.shift-drag-handle', list => {
+      const orderedIds = [...list.querySelectorAll('.sortable-row')].map(r => r.getAttribute('data-shift-id'));
+      if (orderedIds.length === shiftPresets.length) {
+        shiftPresets = orderedIds.map(id => shiftPresets.find(s => s.id === id)).filter(Boolean);
+        saveShiftPresets();
+        renderShiftPresetManagerList();
+        renderShiftPresetButtonsInForm();
       }
-    };
-    on('shiftStartInput', 'change', checkOvernightTime);
-    on('shiftEndInput', 'change', checkOvernightTime);
-
-    on('addShiftForm', 'submit', e => {
-      e.preventDefault();
-      const editingId = document.getElementById('editingEntryId').value;
-      const startDate = document.getElementById('shiftStartDateInput').value;
-      let endDate = document.getElementById('shiftEndDateInput').value;
-      const helperId = document.querySelector('input[name="helperId"]:checked')?.value || helpers[0]?.id;
-      const start = document.getElementById('shiftStartInput').value;
-      const end = document.getElementById('shiftEndInput').value;
-      if (!helperId || !isValidDateStr(startDate) || !isValidDateStr(endDate)) return;
-      if (endDate < startDate) return alert('結束日期不能早於開始日期！');
-      if (getDaysDiff(startDate, endDate) > 60) return alert('單次跨日排班請勿超過 60 天！');
-      if (startDate === endDate && end < start) endDate = addDaysToDateStr(startDate, 1);
-
-      if (editingId) {
-        const idx = entries.findIndex(x => x.id === editingId);
-        if (idx > -1) entries[idx] = { ...entries[idx], startDate, endDate, helperId, shift: selectedShiftPreset, start, end };
-      } else {
-        entries.push({ id: 'entry_' + Date.now(), startDate, endDate, helperId, shift: selectedShiftPreset, start, end });
-      }
-      selectedDateStr = startDate;
-      const [y, m] = startDate.split('-').map(Number);
-      currentYear = y; currentMonth = m - 1;
-      saveEntries();
-      closeShiftFormModal();
-      refreshAllViews();
     });
 
+    // 長按選單按鈕
     on('cancelActionMenuBtn', 'click', closeActionMenu);
     on('editEntryBtn', 'click', () => {
       if (!activeActionEntryId) return;
@@ -1703,16 +2042,7 @@
       refreshAllViews();
     });
 
-    const openHelperModal = () => {
-      document.getElementById('helperEditorCard').classList.add('hidden');
-      renderHelperManagerList();
-      const m = document.getElementById('helperManagerModal');
-      m.classList.remove('hidden'); m.classList.add('flex');
-    };
-    const closeHelperModal = () => {
-      const m = document.getElementById('helperManagerModal');
-      m.classList.add('hidden'); m.classList.remove('flex');
-    };
+    // 照顧者設定 Modal 互動與上下拖動排序
     on('openHelperModalBtn', 'click', openHelperModal);
     on('navHelpersBtn', 'click', openHelperModal);
     on('closeHelperModalBtn', 'click', closeHelperModal);
@@ -1748,62 +2078,16 @@
       refreshAllViews();
     });
 
-    // 照顧者設定清單：手動上下拖動排序 (Pointer Events 同時支援手機觸控與電腦滑鼠)
-    let draggingHelperRow = null;
-
-    on('helperManagerList', 'pointerdown', e => {
-      const handle = e.target.closest('.helper-drag-handle');
-      if (!handle) return;
-      const row = handle.closest('.helper-item-row');
-      if (!row) return;
-      e.preventDefault();
-      draggingHelperRow = row;
-      row.classList.add('dragging-helper-row');
-      if (navigator.vibrate) navigator.vibrate(20);
-      if (handle.setPointerCapture) {
-        try { handle.setPointerCapture(e.pointerId); } catch (err) {}
-      }
-    });
-
-    on('helperManagerList', 'pointermove', e => {
-      if (!draggingHelperRow) return;
-      e.preventDefault();
-      const list = document.getElementById('helperManagerList');
-      if (!list) return;
-      const siblings = [...list.querySelectorAll('.helper-item-row:not(.dragging-helper-row)')];
-      const nextSibling = siblings.find(sib => {
-        const rect = sib.getBoundingClientRect();
-        return e.clientY <= rect.top + rect.height / 2;
-      });
-      if (nextSibling) {
-        list.insertBefore(draggingHelperRow, nextSibling);
-      } else {
-        list.appendChild(draggingHelperRow);
-      }
-      // 即時更新序號顯示
-      [...list.querySelectorAll('.helper-item-row')].forEach((r, idx) => {
-        const numEl = r.querySelector('.helper-order-num');
-        if (numEl) numEl.textContent = `${idx + 1}.`;
-      });
-    });
-
-    const finishHelperDrag = () => {
-      if (!draggingHelperRow) return;
-      draggingHelperRow.classList.remove('dragging-helper-row');
-      draggingHelperRow = null;
-      const list = document.getElementById('helperManagerList');
-      if (!list) return;
-      const orderedIds = [...list.querySelectorAll('.helper-item-row')].map(r => r.getAttribute('data-helper-id'));
+    // 啟用「照顧者設定」清單上下拉動排序
+    attachVerticalDragReorder('helperManagerList', '.helper-drag-handle', list => {
+      const orderedIds = [...list.querySelectorAll('.sortable-row')].map(r => r.getAttribute('data-helper-id'));
       if (orderedIds.length === helpers.length) {
         helpers = orderedIds.map(id => helpers.find(h => h.id === id)).filter(Boolean);
         saveHelpers();
         renderHelperManagerList();
         refreshAllViews();
       }
-    };
-
-    on('helperManagerList', 'pointerup', finishHelperDrag);
-    on('helperManagerList', 'pointercancel', finishHelperDrag);
+    });
 
     on('helperManagerList', 'click', e => {
       const eb = e.target.closest('[data-edit-helper]');
